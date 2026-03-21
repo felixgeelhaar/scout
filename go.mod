@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/felixgeelhaar/bolt v1.3.0
 	github.com/felixgeelhaar/fortify v1.2.1
-	github.com/felixgeelhaar/mcp-go v1.8.0
+	github.com/felixgeelhaar/mcp-go v1.9.0
 	github.com/felixgeelhaar/statekit v1.3.1
 	github.com/gorilla/websocket v1.5.3
 )

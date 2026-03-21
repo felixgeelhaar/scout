@@ -275,14 +275,19 @@ IMPORTANT: Scout uses standard CSS selectors, NOT Playwright selectors. Do NOT u
 			_ = progress.ReportWithMessage(2, &total, "Page loaded")
 			_ = progress.ReportWithMessage(3, &total, "Done")
 			// Notify client that available tools may have changed based on page content
-			if session := mcp.SessionFromContext(ctx); session != nil {
-				_ = session.NotifyToolListChanged()
+			if sess := mcp.SessionFromContext(ctx); sess != nil {
+				_ = sess.NotifyToolListChanged()
+			}
+			// Push page info via channel if supported
+			if ch := mcp.ChannelFromContext(ctx); ch != nil {
+				_ = ch.SendText("scout.navigation", fmt.Sprintf("Navigated to %s — %s", result.URL, result.Title))
 			}
 			return result, nil
 		})
 
 	srv.Tool("observe").
 		ReadOnly().
+		OutputSchema(agent.Observation{}).
 		Description("Get a structured snapshot of the current page including all links, inputs, buttons, and visible text.").
 		Handler(func(ctx context.Context, input ObserveInput) (*agent.Observation, error) {
 			return s().Observe()
