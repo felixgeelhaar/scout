@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Install scout binary.
-# Usage: curl -fsSL https://raw.githubusercontent.com/felixgeelhaar/browse-go/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/felixgeelhaar/scout/main/install.sh | bash
 set -euo pipefail
 
-REPO="felixgeelhaar/browse-go"
+REPO="felixgeelhaar/scout"
 BINARY="scout"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 

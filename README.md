@@ -1,4 +1,4 @@
-# browse-go
+# scout
 
 Gin-like browser automation for Go. No rod, no chromedp — pure CDP over WebSocket with middleware composition, grouped tasks, and an agent-optimized API.
 
@@ -23,20 +23,20 @@ engine.Run("search")
 
 ```bash
 # Homebrew (macOS/Linux)
-brew install felixgeelhaar/tap/browse-mcp
+brew install felixgeelhaar/tap/scout
 
 # Or download binary directly
-curl -fsSL https://raw.githubusercontent.com/felixgeelhaar/browse-go/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/felixgeelhaar/scout/main/install.sh | bash
 
 # Or go install
-go install github.com/felixgeelhaar/browse-go/cmd/browse-mcp@latest
+go install github.com/felixgeelhaar/scout/cmd/scout@latest
 ```
 
 Then configure in your MCP client:
 
 ```bash
 # Claude Code
-claude mcp add browse -- browse-mcp
+claude mcp add scout -- scout
 
 # Claude Desktop — add to ~/Library/Application Support/Claude/claude_desktop_config.json
 # Cursor — add to ~/.cursor/mcp.json
@@ -46,7 +46,7 @@ claude mcp add browse -- browse-mcp
 {
   "mcpServers": {
     "browse": {
-      "command": "browse-mcp"
+      "command": "scout"
     }
   }
 }
@@ -55,16 +55,16 @@ claude mcp add browse -- browse-mcp
 ### As a Go Library
 
 ```bash
-go get github.com/felixgeelhaar/browse-go
+go get github.com/felixgeelhaar/scout
 ```
 
 Requires Chrome or Chromium installed on the system (or use `WithRemoteCDP` for remote browsers).
 
 ## Core Concepts
 
-browse-go maps Gin patterns to browser automation:
+scout maps Gin patterns to browser automation:
 
-| Gin | browse-go | Purpose |
+| Gin | scout | Purpose |
 |-----|-----------|---------|
 | `gin.Engine` | `browse.Engine` | Browser lifecycle, global middleware |
 | `gin.Context` | `browse.Context` | Page state, actions, data passing |
@@ -149,7 +149,7 @@ data, _ := session.Screenshot()
 Single-binary MCP server — no Node.js, no Python:
 
 ```bash
-go build -o browse-mcp ./cmd/browse-mcp
+go build -o scout ./cmd/scout
 ```
 
 21 tools: `navigate`, `observe`, `observe_diff`, `observe_with_budget`, `click`, `type`, `fill_form`, `fill_form_semantic`, `discover_form`, `extract`, `extract_all`, `extract_table`, `screenshot`, `pdf`, `markdown`, `readable_text`, `accessibility_tree`, `has_element`, `wait_for`, `enable_network_capture`, `network_requests`.
@@ -158,7 +158,7 @@ go build -o browse-mcp ./cmd/browse-mcp
 {
   "mcpServers": {
     "browse": {
-      "command": "./browse-mcp"
+      "command": "./scout"
     }
   }
 }
@@ -182,7 +182,7 @@ browse.New(
 
 ## Content Distillation
 
-Pages return megabytes of HTML. browse-go provides 5 levels of content extraction:
+Pages return megabytes of HTML. scout provides 5 levels of content extraction:
 
 | Method | Size | Best for |
 |--------|------|----------|
@@ -205,7 +205,7 @@ session.SetContentOptions(agent.ContentOptions{
 ## Architecture
 
 ```
-browse-go/
+scout/
 ├── browse.go, engine.go, context.go    # Gin-like API
 ├── page.go, selection.go               # CDP page & element interaction
 ├── recorder.go                        # Video recording (screencast → MP4/GIF)
@@ -216,7 +216,7 @@ browse-go/
 ├── internal/cdp/                      # WebSocket CDP client (context-aware, session-scoped)
 ├── internal/launcher/                 # Chrome process management
 ├── internal/wait/                     # Auto-wait utilities
-├── cmd/browse-mcp/                    # MCP server binary (21 tools)
+├── cmd/scout/                    # MCP server binary (21 tools)
 └── examples/                          # login, scrape, demo
 ```
 

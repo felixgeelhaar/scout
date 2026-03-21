@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pre-commit hook for browse-go
+# Pre-commit hook for scout
 # Runs: gofmt, go vet, golangci-lint, unit tests, coverctl check, nox scan
 #
 # Install: ln -sf ../../scripts/pre-commit.sh .git/hooks/pre-commit
@@ -15,7 +15,7 @@ pass() { echo -e "${GREEN}✓${NC} $1"; }
 fail() { echo -e "${RED}✗${NC} $1"; exit 1; }
 warn() { echo -e "${YELLOW}!${NC} $1"; }
 
-echo "browse-go pre-commit checks"
+echo "scout pre-commit checks"
 echo "==========================="
 
 # 1. gofmt

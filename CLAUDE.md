@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-browse-go is a Gin-like browser automation library for Go using a pure Chrome DevTools Protocol (CDP) implementation over WebSocket. No rod, no chromedp. It has two API layers: a core `browse` package (Engine/Context/Group/HandlerFunc for developers) and an `agent` package (Session-based, structured-output API for AI agents). Includes an MCP server binary at `cmd/browse-mcp`.
+scout is a Gin-like browser automation library for Go using a pure Chrome DevTools Protocol (CDP) implementation over WebSocket. No rod, no chromedp. It has two API layers: a core `browse` package (Engine/Context/Group/HandlerFunc for developers) and an `agent` package (Session-based, structured-output API for AI agents). Includes an MCP server binary at `cmd/scout`.
 
 ## Commands
 
@@ -57,7 +57,7 @@ The root `browse` package follows Gin's patterns — `Engine` manages browser li
 | `felixgeelhaar/bolt` | Logger/Recovery middleware (zero-alloc structured logging) |
 | `felixgeelhaar/fortify` | Retry, Timeout, CircuitBreaker, RateLimit, Bulkhead middleware |
 | `felixgeelhaar/statekit` | Task lifecycle state machine (pending→running→success/failed/aborted) |
-| `felixgeelhaar/mcp-go` | MCP server framework for `cmd/browse-mcp` |
+| `felixgeelhaar/mcp-go` | MCP server framework for `cmd/scout` |
 | `gorilla/websocket` | CDP WebSocket transport |
 
 ## Lint Configuration

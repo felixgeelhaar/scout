@@ -2,11 +2,11 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Scout (browse-go), please report it responsibly.
+If you discover a security vulnerability in Scout (scout), please report it responsibly.
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Instead, please email security concerns to the maintainer or use [GitHub Security Advisories](https://github.com/felixgeelhaar/browse-go/security/advisories/new).
+Instead, please email security concerns to the maintainer or use [GitHub Security Advisories](https://github.com/felixgeelhaar/scout/security/advisories/new).
 
 ## Security Model
 

@@ -52,7 +52,7 @@ brews:
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     directory: Formula
-    homepage: "https://github.com/felixgeelhaar/browse-go"
+    homepage: "https://github.com/felixgeelhaar/scout"
     description: "MCP server for AI-powered browser automation"
     license: "MIT"
     install: |
