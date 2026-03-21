@@ -525,6 +525,39 @@ Use 'configure' to switch between headless and visible browser modes without res
 			return s().DiscoverForm(input.Selector)
 		})
 
+	// --- Tabs ---
+
+	srv.Tool("open_tab").
+		OpenWorld().
+		Description("Open a new named browser tab and navigate to a URL. The new tab becomes active.").
+		Handler(func(ctx context.Context, input TabInput) (*agent.PageResult, error) {
+			return s().OpenTab(input.Name, input.URL)
+		})
+
+	srv.Tool("switch_tab").
+		ClosedWorld().
+		Description("Switch to a named tab. Use list_tabs to see available tabs.").
+		Handler(func(ctx context.Context, input TabInput) (*agent.PageResult, error) {
+			return s().SwitchTab(input.Name)
+		})
+
+	srv.Tool("close_tab").
+		ClosedWorld().
+		Description("Close a named tab. Cannot close the currently active tab.").
+		Handler(func(ctx context.Context, input TabInput) (string, error) {
+			if err := s().CloseTab(input.Name); err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("Closed tab %q", input.Name), nil
+		})
+
+	srv.Tool("list_tabs").
+		ReadOnly().
+		Description("List all open tabs with their names, URLs, and titles.").
+		Handler(func(ctx context.Context, input ObserveInput) ([]agent.TabInfo, error) {
+			return s().ListTabs()
+		})
+
 	// --- Gated tools ---
 
 	if os.Getenv("SCOUT_ENABLE_EVAL") == "1" {

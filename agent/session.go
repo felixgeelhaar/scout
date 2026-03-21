@@ -30,6 +30,7 @@ type Session struct {
 	network       *networkState
 	diffInstalled bool
 	closed        bool
+	tabs          *tabManager
 }
 
 // SessionConfig configures a new Session.
