@@ -1,110 +1,85 @@
-# scout
+# Scout
 
-Gin-like browser automation for Go. No rod, no chromedp — pure CDP over WebSocket with middleware composition, grouped tasks, and an agent-optimized API.
+AI-powered browser automation for Go. Pure CDP over WebSocket — no rod, no chromedp, no Node.js.
 
-```go
-engine := browse.Default(browse.WithHeadless(true))
-engine.MustLaunch()
-defer engine.Close()
+A single `scout` binary gives you a full CLI, a 46-tool MCP server, and a Go library with Gin-like middleware composition.
 
-engine.Task("search", func(c *browse.Context) {
-    c.MustNavigate("https://example.com")
-    c.El("input[name=q]").MustInput("hello")
-    c.El("button[type=submit]").MustClick()
-    fmt.Println(c.El("#result").MustText())
-})
+```bash
+brew install felixgeelhaar/tap/scout
+```
 
-engine.Run("search")
+## Quick Start
+
+```bash
+# CLI — visible browser, one-shot commands
+scout observe https://example.com          # structured page snapshot
+scout markdown https://news.ycombinator.com # page as compact markdown
+scout screenshot https://github.com         # save screenshot
+scout extract https://example.com h1        # extract element text
+scout frameworks https://react.dev          # detect React, Vue, etc.
+
+# MCP Server — give AI agents browser superpowers
+claude mcp add scout -- scout mcp serve
 ```
 
 ## Install
 
-### As an MCP Server (for AI agents)
-
 ```bash
-# Homebrew (macOS/Linux)
+# Homebrew
 brew install felixgeelhaar/tap/scout
 
-# Or download binary directly
+# Direct binary
 curl -fsSL https://raw.githubusercontent.com/felixgeelhaar/scout/main/install.sh | bash
 
-# Or go install
+# Go
 go install github.com/felixgeelhaar/scout/cmd/scout@latest
-```
 
-Then configure in your MCP client:
-
-```bash
-# Claude Code
-claude mcp add scout -- scout
-
-# Claude Desktop — add to ~/Library/Application Support/Claude/claude_desktop_config.json
-# Cursor — add to ~/.cursor/mcp.json
-```
-
-```json
-{
-  "mcpServers": {
-    "browse": {
-      "command": "scout"
-    }
-  }
-}
-```
-
-### As a Go Library
-
-```bash
+# As a library
 go get github.com/felixgeelhaar/scout
 ```
 
-Requires Chrome or Chromium installed on the system (or use `WithRemoteCDP` for remote browsers).
+## MCP Server — 46 Tools
 
-## Core Concepts
+Single binary, zero runtime dependencies. Configure in any MCP client:
 
-scout maps Gin patterns to browser automation:
+```bash
+claude mcp add scout -- scout mcp serve           # Claude Code
+```
 
-| Gin | scout | Purpose |
-|-----|-----------|---------|
-| `gin.Engine` | `browse.Engine` | Browser lifecycle, global middleware |
-| `gin.Context` | `browse.Context` | Page state, actions, data passing |
-| `gin.HandlerFunc` | `browse.HandlerFunc` | Middleware and task handlers |
-| `c.Next()` / `c.Abort()` | Same | Middleware chain flow control |
-| `c.Set()` / `c.Get()` | Same | Pass data between handlers |
-| `r.Group("/path")` | `e.Group("name")` | Grouped tasks with shared middleware |
+```json
+{"mcpServers": {"scout": {"command": "scout", "args": ["mcp", "serve"]}}}
+```
 
-## Middleware
+### Tool Categories
 
-Built-in middleware powered by [bolt](https://github.com/felixgeelhaar/bolt) and [fortify](https://github.com/felixgeelhaar/fortify):
+| Category | Tools |
+|----------|-------|
+| **Navigation** | `navigate`, `observe`, `observe_diff`, `observe_with_budget` |
+| **Interaction** | `click`, `click_label`, `type`, `hover`, `double_click`, `right_click`, `select_option`, `scroll_to`, `scroll_by`, `focus`, `drag_drop`, `dispatch_event` |
+| **Forms** | `fill_form`, `fill_form_semantic`, `discover_form` |
+| **Extraction** | `extract`, `extract_all`, `extract_table`, `markdown`, `readable_text`, `accessibility_tree` |
+| **Capture** | `screenshot`, `annotated_screenshot`, `pdf` |
+| **Network** | `enable_network_capture`, `network_requests` |
+| **Tabs** | `open_tab`, `switch_tab`, `close_tab`, `list_tabs` |
+| **Frameworks** | `wait_spa`, `detect_frameworks`, `component_state`, `app_state` |
+| **Playback** | `start_recording`, `stop_recording`, `save_playbook`, `replay_playbook` |
+| **Utility** | `has_element`, `wait_for`, `configure` |
 
-```go
-engine := browse.Default() // Logger + Recovery
+All tools have MCP annotations (`ReadOnly`, `OpenWorld`, `ClosedWorld`, `Idempotent`) for smart auto-approval. Read-only tools like `observe`, `extract`, and `screenshot` run without permission prompts.
 
-// Resilience (fortify)
-engine.Use(middleware.Timeout(30 * time.Second))
-engine.Use(middleware.Retry(middleware.RetryConfig{MaxAttempts: 3}))
-engine.Use(middleware.CircuitBreaker(middleware.CircuitBreakerConfig{ConsecutiveFailures: 5}))
-engine.Use(middleware.RateLimit(middleware.RateLimitConfig{Rate: 10}))
-engine.Use(middleware.Bulkhead(middleware.BulkheadConfig{MaxConcurrent: 5}))
+### Runtime Configuration
 
-// Anti-detection
-engine.Use(middleware.Stealth()) // navigator.webdriver, plugins, WebGL, etc.
+Switch between headless and visible browser without restarting:
 
-// Auth
-engine.Use(middleware.BearerAuth("token"))
-engine.Use(middleware.BasicAuth("user", "pass"))
-engine.Use(middleware.CookieAuth(browse.Cookie{Name: "session", Value: "abc"}))
-
-// Utilities
-engine.Use(middleware.ScreenshotOnError("./errors"))
-engine.Use(middleware.SlowMotion(500 * time.Millisecond))
-engine.Use(middleware.Viewport(1920, 1080))
-engine.Use(middleware.BlockResources("Image", "Font", "Stylesheet"))
+```
+Agent: configure(headless: false)   → browser window appears
+Agent: navigate("https://...")       → watch it work
+Agent: configure(headless: true)     → back to headless
 ```
 
 ## Agent Package
 
-The `agent` package provides a high-level, session-based API optimized for AI agents. All responses are structured JSON, content is auto-truncated for LLM context windows, and every operation auto-waits.
+High-level Go API for AI agents. Structured output, auto-wait, goroutine-safe.
 
 ```go
 session, _ := agent.NewSession(agent.SessionConfig{Headless: true})
@@ -112,112 +87,130 @@ defer session.Close()
 
 // Navigate and observe
 session.Navigate("https://example.com")
-obs, _ := session.Observe()       // structured: links, inputs, buttons, text
-md, _ := session.Markdown()       // compact markdown, not raw HTML
-tree, _ := session.AccessibilityTree() // semantic element tree
+obs, _ := session.Observe()               // links, inputs, buttons, text + action costs
 
-// DOM diff — only see what changed (saves 50-80% tokens)
+// DOM diff — only what changed (saves 50-80% tokens)
 session.Click("#submit")
 _, diff, _ := session.ObserveDiff()
-// diff.Added: [{Tag:"div", ID:"success", Text:"Saved!"}]
+// diff.Classification: "modal_appeared"
+// diff.Summary: "Modal/dialog appeared: Login required"
 
-// Semantic form filling — no CSS selectors needed
+// Semantic form filling — no CSS selectors
 session.FillFormSemantic(map[string]string{
-    "Email":    "user@example.com",
-    "Password": "secret",
+    "Email": "user@example.com", "Password": "secret",
 })
 
-// Network API capture — read XHR responses directly
+// Visual grounding — click by number, not selector
+result, _ := session.AnnotatedScreenshot()  // numbered labels on elements
+session.ClickLabel(7)                        // click element [7]
+
+// Multi-tab coordination
+session.OpenTab("pricing", "https://example.com/pricing")
+session.SwitchTab("default")
+
+// Framework detection (19 frameworks)
+frameworks, _ := session.DetectedFrameworks() // ["react", "nextjs"]
+state, _ := session.ComponentState("#app")    // read React/Vue state
+
+// Network capture — read API responses directly
 session.EnableNetworkCapture("/api/")
-session.Navigate("https://app.example.com")
 captured := session.CapturedRequests("/api/users")
-// [{URL:"/api/users", Status:200, ResponseBody:"{...}"}]
 
-// Token-budget-aware observation
-obs, _ = session.ObserveWithBudget(500) // fits in ~500 tokens
+// Action replay — record once, replay without LLM
+session.StartRecordingPlaybook("login-flow")
+// ... do stuff ...
+pb, _ := session.StopRecordingPlaybook()
+agent.SavePlaybook(pb, "login.json")
+// Later: session.ReplayPlaybook(pb)  // 100x cheaper
 
-// Persistent sessions
-session.SaveProfile("session.json")  // cookies + localStorage
-session.LoadProfile("session.json")  // restore on next run
+// Persistent profiles
+session.SaveProfile("session.json")   // cookies + localStorage
+session.LoadProfile("session.json")
 
-// Screenshots auto-compressed for LLM contexts (default 5MB limit)
-data, _ := session.Screenshot()
+// Content distillation (5 levels)
+session.Markdown()          // ~2-8KB compact markdown
+session.ReadableText()      // ~1-4KB main content only
+session.AccessibilityTree() // ~1-4KB semantic tree
+session.ObserveWithBudget(500) // fit in ~500 tokens
 ```
 
-## MCP Server
+## Core Library
 
-Single-binary MCP server — no Node.js, no Python:
+Gin-like Engine/Context/Group/HandlerFunc with middleware composition:
+
+```go
+engine := browse.Default(browse.WithHeadless(true))
+engine.MustLaunch()
+defer engine.Close()
+
+engine.Use(middleware.Stealth())
+engine.Use(middleware.Retry(middleware.RetryConfig{MaxAttempts: 3}))
+engine.Use(middleware.Timeout(30 * time.Second))
+
+admin := engine.Group("admin", middleware.BasicAuth("admin", "secret"))
+admin.Task("export", func(c *browse.Context) {
+    c.MustNavigate("https://app.example.com/admin")
+    table, _ := c.ExtractTable("#users")
+    c.Set("data", table)
+})
+
+engine.RunGroup("admin")
+```
+
+### Middleware
+
+| Category | Middleware |
+|----------|-----------|
+| **Resilience** | `Retry`, `Timeout`, `CircuitBreaker`, `RateLimit`, `Bulkhead` |
+| **Auth** | `BearerAuth`, `BasicAuth`, `CookieAuth`, `HeaderAuth` |
+| **Anti-detection** | `Stealth` (10 patches: webdriver, plugins, WebGL, etc.) |
+| **Network** | `BlockResources`, `WaitNetworkIdle` |
+| **Utilities** | `ScreenshotOnError`, `SlowMotion`, `Viewport` |
+
+## CLI
+
+CLI defaults to visible browser (`--headless` to hide):
 
 ```bash
-go build -o scout ./cmd/scout
-```
-
-21 tools: `navigate`, `observe`, `observe_diff`, `observe_with_budget`, `click`, `type`, `fill_form`, `fill_form_semantic`, `discover_form`, `extract`, `extract_all`, `extract_table`, `screenshot`, `pdf`, `markdown`, `readable_text`, `accessibility_tree`, `has_element`, `wait_for`, `enable_network_capture`, `network_requests`.
-
-```json
-{
-  "mcpServers": {
-    "browse": {
-      "command": "./scout"
-    }
-  }
-}
-```
-
-## Options
-
-```go
-browse.New(
-    browse.WithHeadless(true),
-    browse.WithTimeout(30 * time.Second),
-    browse.WithViewport(1280, 720),
-    browse.WithSlowMotion(100 * time.Millisecond),
-    browse.WithUserAgent("custom-agent/1.0"),
-    browse.WithProxy("http://proxy:8080"),
-    browse.WithRemoteCDP("ws://browserbase.example.com/connect/..."),
-    browse.WithPoolSize(5),           // concurrent task execution
-    browse.WithAllowPrivateIPs(true), // for testing with localhost
-)
-```
-
-## Content Distillation
-
-Pages return megabytes of HTML. scout provides 5 levels of content extraction:
-
-| Method | Size | Best for |
-|--------|------|----------|
-| `HTML()` | 5-20MB | Never use for agents |
-| `Observe()` | ~2-5KB | Deciding what to click/fill |
-| `Markdown()` | ~2-8KB | Reading page content |
-| `ReadableText()` | ~1-4KB | Main article/body text only |
-| `AccessibilityTree()` | ~1-4KB | Compact semantic DOM |
-
-All methods respect configurable limits:
-
-```go
-session.SetContentOptions(agent.ContentOptions{
-    MaxLength:          4000,
-    MaxLinks:           25,
-    MaxScreenshotBytes: 5 * 1024 * 1024,
-})
+scout navigate <url>                  # page info as JSON
+scout observe <url>                   # structured observation
+scout markdown <url>                  # compact markdown
+scout screenshot <url> [--output f]   # save screenshot
+scout pdf <url> [--output f]          # save PDF
+scout extract <url> <selector>        # extract text
+scout eval <url> <expression>         # run JavaScript
+scout form discover <url>             # discover form fields
+scout frameworks <url>                # detect frameworks
+scout mcp serve                       # start MCP server
+scout version                         # print version
 ```
 
 ## Architecture
 
 ```
 scout/
-├── browse.go, engine.go, context.go    # Gin-like API
-├── page.go, selection.go               # CDP page & element interaction
+├── browse.go, engine.go, context.go   # Gin-like API
+├── page.go, selection.go              # CDP page & element interaction
 ├── recorder.go                        # Video recording (screencast → MP4/GIF)
-├── lifecycle.go                       # statekit task state machine
-├── middleware.go                      # bolt logger + recovery
-├── middleware/                        # stealth, fortify resilience, auth, network
-├── agent/                             # AI agent API: session, observe, diff, forms, network, profiles
-├── internal/cdp/                      # WebSocket CDP client (context-aware, session-scoped)
+├── middleware/                        # stealth, resilience, auth, network
+├── agent/                             # AI agent API (46 methods)
+│   ├── session.go                     # Session lifecycle, Navigate, Click, Type
+│   ├── observe.go, diff.go            # Observe, ObserveDiff, cost estimation
+│   ├── content.go                     # Markdown, ReadableText, AccessibilityTree
+│   ├── form.go                        # DiscoverForm, FillFormSemantic, MatchFormField
+│   ├── annotate.go                    # AnnotatedScreenshot, ClickLabel
+│   ├── network.go                     # EnableNetworkCapture, CapturedRequests
+│   ├── spa.go                         # DetectedFrameworks, ComponentState, GetAppState
+│   ├── tabs.go                        # OpenTab, SwitchTab, CloseTab, ListTabs
+│   ├── playbook.go                    # StartRecording, ReplayPlaybook, SavePlaybook
+│   ├── interact.go                    # Hover, DragDrop, SelectOption, ScrollTo
+│   ├── profile.go                     # CaptureProfile, ApplyProfile, SaveProfile
+│   ├── selector.go                    # Playwright :text() selector translation
+│   └── budget.go                      # ObserveWithBudget, EstimateTokens
+├── internal/cdp/                      # WebSocket CDP client (context-aware)
 ├── internal/launcher/                 # Chrome process management
-├── internal/wait/                     # Auto-wait utilities
-├── cmd/scout/                    # MCP server binary (21 tools)
-└── examples/                          # login, scrape, demo
+├── cmd/scout/                         # CLI + MCP server (46 tools)
+└── docs/                              # Landing page (GitHub Pages)
 ```
 
 ## License

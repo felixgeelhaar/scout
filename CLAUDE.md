@@ -46,7 +46,14 @@ The root `browse` package follows Gin's patterns — `Engine` manages browser li
 - Resilience middleware (Retry, Timeout, CircuitBreaker, Bulkhead) uses `c.SaveIndex()`/`c.RestoreIndex()` to replay the downstream handler chain. `RestoreIndex` clears `errors` and `aborted` but preserves `keys` — data set by prior handlers survives retries.
 - `agent.Session` holds a `sync.Mutex` and locks on every public method. Internal helpers (`ensurePage`, `observeInternal`, `pageResult`, `discoverFormInternal`) are called with the lock held — they must not re-lock.
 - The `internal/wait` package provides the polling implementation. `Page.WaitLoad()` and `Page.WaitForSelector()` delegate to `wait.ForLoad()` and `wait.ForSelector()`.
-- `MCP eval tool` is gated behind `BROWSE_ENABLE_EVAL=1` env var due to arbitrary code execution risk.
+- MCP eval tool is gated behind `SCOUT_ENABLE_EVAL=1` env var due to arbitrary code execution risk.
+- MCP server uses lazy session creation — browser starts on first tool use, not at startup. `configure` tool changes settings without restart.
+- Playwright-style selectors (`:text('...')`, `:has-text('...')`) are translated to JS text-content lookup via `agent/selector.go`.
+- `annotated_screenshot` returns element list only by default (no base64 image). Set `include_image: true` for the image.
+- Action replay: `recordAction()` is called inside Navigate/Click/Type when `s.recording != nil`. Playbooks validate expected outcomes.
+- Multi-tab: `tabManager` tracks named pages. Default page becomes "default" tab when `OpenTab` is first called.
+- DOM diff classification: `classifyDiff()` categorizes mutations as modal_appeared, form_error, notification, loading_complete, etc.
+- Action cost: `estimateLinkCost`/`estimateButtonCost` tag elements as high/medium/low in Observe responses.
 
 **Screenshot compression:** `ScreenshotWithOptions` with `MaxSize` set progressively re-captures as JPEG with lower quality (80→60→40→20) and smaller scale (1.0→0.75→0.5→0.25) until the image fits under the byte limit. `agent.Session.Screenshot()` defaults to a 5MB limit.
 
