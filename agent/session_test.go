@@ -1,0 +1,236 @@
+package agent_test
+
+import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/user/browse-go/agent"
+)
+
+func testServer() *httptest.Server {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, `<!DOCTYPE html>
+<html>
+<head><title>Agent Test</title></head>
+<body>
+  <h1 id="title">Hello Agent</h1>
+  <a href="/about">About Us</a>
+  <a href="/contact">Contact</a>
+  <form>
+    <input id="name" name="name" type="text" placeholder="Your name" />
+    <input id="email" name="email" type="email" placeholder="Email" />
+    <button type="submit">Submit</button>
+  </form>
+  <table id="data">
+    <thead><tr><th>Name</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td>Alice</td><td>Engineer</td></tr>
+      <tr><td>Bob</td><td>Designer</td></tr>
+    </tbody>
+  </table>
+  <button id="action" onclick="document.getElementById('title').textContent='Updated!'">Action</button>
+</body>
+</html>`)
+	})
+	mux.HandleFunc("/about", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, `<!DOCTYPE html><html><head><title>About</title></head><body><h1>About Page</h1></body></html>`)
+	})
+	return httptest.NewServer(mux)
+}
+
+func newSession(t *testing.T) *agent.Session {
+	t.Helper()
+	s, err := agent.NewSession(agent.SessionConfig{Headless: true, AllowPrivateIPs: true})
+	if err != nil {
+		t.Fatalf("NewSession: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+	return s
+}
+
+func TestNavigate(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping agent test in short mode")
+	}
+	ts := testServer()
+	defer ts.Close()
+
+	s := newSession(t)
+	result, err := s.Navigate(ts.URL)
+	if err != nil {
+		t.Fatalf("Navigate: %v", err)
+	}
+	if result.Title != "Agent Test" {
+		t.Errorf("title: expected 'Agent Test', got %q", result.Title)
+	}
+}
+
+func TestObserve(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping agent test in short mode")
+	}
+	ts := testServer()
+	defer ts.Close()
+
+	s := newSession(t)
+	s.Navigate(ts.URL)
+
+	obs, err := s.Observe()
+	if err != nil {
+		t.Fatalf("Observe: %v", err)
+	}
+
+	if obs.Title != "Agent Test" {
+		t.Errorf("title: %q", obs.Title)
+	}
+	if len(obs.Links) < 2 {
+		t.Errorf("expected at least 2 links, got %d", len(obs.Links))
+	}
+	if len(obs.Inputs) < 2 {
+		t.Errorf("expected at least 2 inputs, got %d", len(obs.Inputs))
+	}
+	if len(obs.Buttons) < 2 {
+		t.Errorf("expected at least 2 buttons, got %d", len(obs.Buttons))
+	}
+	if obs.Interactive == 0 {
+		t.Error("expected interactive > 0")
+	}
+
+	t.Logf("Observation: %d links, %d inputs, %d buttons, %d interactive",
+		len(obs.Links), len(obs.Inputs), len(obs.Buttons), obs.Interactive)
+}
+
+func TestClick(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping agent test in short mode")
+	}
+	ts := testServer()
+	defer ts.Close()
+
+	s := newSession(t)
+	s.Navigate(ts.URL)
+
+	_, err := s.Click("#action")
+	if err != nil {
+		t.Fatalf("Click: %v", err)
+	}
+
+	result, err := s.Extract("#title")
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	if result.Text != "Updated!" {
+		t.Errorf("expected 'Updated!', got %q", result.Text)
+	}
+}
+
+func TestType(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping agent test in short mode")
+	}
+	ts := testServer()
+	defer ts.Close()
+
+	s := newSession(t)
+	s.Navigate(ts.URL)
+
+	result, err := s.Type("#name", "Alice")
+	if err != nil {
+		t.Fatalf("Type: %v", err)
+	}
+	if result.Value != "Alice" {
+		t.Errorf("value: expected 'Alice', got %q", result.Value)
+	}
+}
+
+func TestFillForm(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping agent test in short mode")
+	}
+	ts := testServer()
+	defer ts.Close()
+
+	s := newSession(t)
+	s.Navigate(ts.URL)
+
+	result, err := s.FillForm(map[string]string{
+		"#name":  "Alice",
+		"#email": "alice@test.local",
+	})
+	if err != nil {
+		t.Fatalf("FillForm: %v", err)
+	}
+	if !result.Success {
+		t.Error("expected success")
+	}
+	if len(result.Fields) != 2 {
+		t.Errorf("expected 2 fields, got %d", len(result.Fields))
+	}
+}
+
+func TestExtractTable(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping agent test in short mode")
+	}
+	ts := testServer()
+	defer ts.Close()
+
+	s := newSession(t)
+	s.Navigate(ts.URL)
+
+	table, err := s.ExtractTable("#data")
+	if err != nil {
+		t.Fatalf("ExtractTable: %v", err)
+	}
+	if table.ColCount != 2 {
+		t.Errorf("expected 2 columns, got %d", table.ColCount)
+	}
+	if table.RowCount != 2 {
+		t.Errorf("expected 2 rows, got %d", table.RowCount)
+	}
+	if len(table.Rows) > 0 && table.Rows[0][0] != "Alice" {
+		t.Errorf("first cell: expected 'Alice', got %q", table.Rows[0][0])
+	}
+}
+
+func TestExtractAll(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping agent test in short mode")
+	}
+	ts := testServer()
+	defer ts.Close()
+
+	s := newSession(t)
+	s.Navigate(ts.URL)
+
+	result, err := s.ExtractAll("a")
+	if err != nil {
+		t.Fatalf("ExtractAll: %v", err)
+	}
+	if result.Count < 2 {
+		t.Errorf("expected at least 2 links, got %d", result.Count)
+	}
+}
+
+func TestHasElement(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping agent test in short mode")
+	}
+	ts := testServer()
+	defer ts.Close()
+
+	s := newSession(t)
+	s.Navigate(ts.URL)
+
+	if !s.HasElement("#title") {
+		t.Error("expected #title to exist")
+	}
+	if s.HasElement("#nonexistent") {
+		t.Error("expected #nonexistent to not exist")
+	}
+}

@@ -1,0 +1,36 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+scout
+
+# Test artifacts
+*.test
+*.out
+*.png
+coverage.txt
+coverage.html
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage history
+.cover/
+.coverctl.yaml.backup
+
+# Nox scan artifacts
+findings.json
+.nox/
+
+# Claude Code
+.claude/

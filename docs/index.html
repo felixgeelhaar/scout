@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scout — AI-Powered Browser Automation for Go</title>
+<meta name="description" content="Gin-like browser automation library for Go with pure CDP, agent-optimized APIs, and a single-binary MCP server. No rod, no chromedp.">
+<meta name="theme-color" content="#0a0e1a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>S</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:        #0a0e1a;
+  --bg-raised: #111827;
+  --bg-card:   #151d2e;
+  --bg-code:   #0d1117;
+  --border:    #1e293b;
+  --border-hi: #2563eb33;
+  --text:      #e2e8f0;
+  --text-dim:  #94a3b8;
+  --text-code: #c9d1d9;
+  --blue:      #3b82f6;
+  --blue-dim:  #2563eb;
+  --amber:     #f59e0b;
+  --amber-dim: #d97706;
+  --green:     #22c55e;
+  --red:       #ef4444;
+  --purple:    #a78bfa;
+  --cyan:      #22d3ee;
+  --font-sans: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;
+  --font-mono: "SF Mono",SFMono-Regular,ui-monospace,"DejaVu Sans Mono",Menlo,Consolas,monospace;
+  --max-w:     1140px;
+  --radius:    8px;
+}
+
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font-sans);
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* --- Layout --- */
+.container{max-width:var(--max-w);margin:0 auto;padding:0 24px}
+
+/* --- Skip link --- */
+.skip-link{
+  position:absolute;top:-60px;left:8px;
+  background:var(--blue);color:#fff;padding:8px 16px;
+  border-radius:var(--radius);z-index:100;font-size:14px;
+  transition:top .2s;
+}
+.skip-link:focus{top:8px}
+
+/* --- Navigation --- */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  background:rgba(10,14,26,.85);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  transition:background .3s;
+}
+nav .container{
+  display:flex;align-items:center;justify-content:space-between;
+  height:56px;
+}
+.nav-logo{
+  font-size:18px;font-weight:700;color:var(--text);
+  text-decoration:none;letter-spacing:-.02em;
+  display:flex;align-items:center;gap:8px;
+}
+.nav-logo .sigil{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:6px;
+  background:linear-gradient(135deg,var(--blue),var(--blue-dim));
+  color:#fff;font-size:14px;font-weight:800;
+  font-family:var(--font-mono);
+}
+.nav-links{display:flex;gap:24px;list-style:none}
+.nav-links a{
+  color:var(--text-dim);text-decoration:none;font-size:14px;
+  font-weight:500;transition:color .2s;
+}
+.nav-links a:hover,.nav-links a:focus{color:var(--text)}
+.nav-gh{
+  display:inline-flex;align-items:center;gap:6px;
+  color:var(--text-dim);text-decoration:none;font-size:14px;
+  font-weight:500;transition:color .2s;
+}
+.nav-gh:hover{color:var(--text)}
+.nav-gh svg{width:18px;height:18px;fill:currentColor}
+.nav-toggle{display:none;background:none;border:none;color:var(--text);cursor:pointer;padding:4px}
+.nav-toggle svg{width:24px;height:24px}
+
+/* --- Hero --- */
+.hero{
+  padding:140px 0 80px;
+  text-align:center;
+  position:relative;
+}
+.hero::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(59,130,246,.08),transparent);
+  pointer-events:none;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:20px;padding:6px 16px;
+  font-size:13px;color:var(--text-dim);margin-bottom:24px;
+}
+.hero-badge code{
+  font-family:var(--font-mono);color:var(--amber);font-size:12px;
+  background:rgba(245,158,11,.1);padding:2px 8px;border-radius:10px;
+}
+h1{
+  font-size:clamp(48px,8vw,80px);
+  font-weight:800;
+  letter-spacing:-.04em;
+  line-height:1;
+  margin-bottom:16px;
+  background:linear-gradient(135deg,var(--text) 40%,var(--blue) 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.hero-sub{
+  font-size:clamp(18px,2.5vw,22px);
+  color:var(--text-dim);
+  max-width:640px;margin:0 auto 40px;
+  line-height:1.5;
+}
+.hero-sub strong{color:var(--text);font-weight:600}
+
+/* Install bar */
+.install-bar{
+  display:inline-flex;align-items:center;
+  background:var(--bg-code);border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  max-width:100%;
+}
+.install-bar code{
+  font-family:var(--font-mono);font-size:14px;
+  color:var(--text-code);padding:12px 16px;
+  white-space:nowrap;overflow-x:auto;
+}
+.install-bar .prompt{color:var(--text-dim);user-select:none}
+.copy-btn{
+  background:none;border:none;border-left:1px solid var(--border);
+  color:var(--text-dim);padding:12px 14px;cursor:pointer;
+  transition:color .2s,background .2s;
+  display:flex;align-items:center;
+}
+.copy-btn:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.copy-btn svg{width:16px;height:16px}
+.copy-btn.copied{color:var(--green)}
+
+.hero-links{
+  display:flex;gap:12px;justify-content:center;
+  margin-top:24px;flex-wrap:wrap;
+}
+.hero-links a{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:10px 20px;border-radius:var(--radius);
+  font-size:14px;font-weight:600;text-decoration:none;
+  transition:all .2s;
+}
+.btn-primary{
+  background:var(--blue);color:#fff;
+}
+.btn-primary:hover{background:var(--blue-dim);transform:translateY(-1px)}
+.btn-secondary{
+  background:var(--bg-card);color:var(--text);border:1px solid var(--border);
+}
+.btn-secondary:hover{border-color:var(--blue);transform:translateY(-1px)}
+
+/* --- Section shared --- */
+section{padding:80px 0}
+.section-label{
+  font-size:13px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--blue);margin-bottom:8px;
+}
+.section-title{
+  font-size:clamp(28px,4vw,36px);font-weight:700;
+  letter-spacing:-.03em;margin-bottom:12px;
+}
+.section-desc{
+  color:var(--text-dim);max-width:600px;font-size:16px;
+  margin-bottom:48px;
+}
+
+/* --- Why Scout --- */
+.why-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:20px;
+}
+.why-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:28px 24px;
+  transition:border-color .3s,transform .3s;
+}
+.why-card:hover{border-color:var(--blue-dim);transform:translateY(-2px)}
+.why-card .icon{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;margin-bottom:16px;
+}
+.why-card h3{font-size:17px;font-weight:700;margin-bottom:8px}
+.why-card p{font-size:14px;color:var(--text-dim);line-height:1.6}
+.icon-cdp{background:rgba(59,130,246,.12);color:var(--blue)}
+.icon-agent{background:rgba(245,158,11,.12);color:var(--amber)}
+.icon-mcp{background:rgba(34,197,94,.12);color:var(--green)}
+.icon-mw{background:rgba(167,139,250,.12);color:var(--purple)}
+
+/* --- Code examples --- */
+.code-section{background:var(--bg-raised)}
+.tab-bar{
+  display:flex;gap:0;border-bottom:1px solid var(--border);
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{
+  background:none;border:none;
+  padding:12px 20px;font-size:14px;font-weight:600;
+  color:var(--text-dim);cursor:pointer;
+  border-bottom:2px solid transparent;
+  white-space:nowrap;transition:color .2s,border-color .2s;
+  font-family:var(--font-sans);
+}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* Code blocks */
+pre{
+  background:var(--bg-code);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:20px 24px;
+  overflow-x:auto;
+  font-size:13px;
+  line-height:1.65;
+  font-family:var(--font-mono);
+  color:var(--text-code);
+  -webkit-overflow-scrolling:touch;
+}
+pre code{font-family:inherit;background:none;padding:0}
+
+/* Syntax highlighting (CSS-only via spans) */
+.kw{color:#ff7b72}      /* keywords */
+.fn{color:#d2a8ff}      /* functions */
+.str{color:#a5d6ff}     /* strings */
+.cm{color:#8b949e}      /* comments */
+.tp{color:#79c0ff}      /* types */
+.num{color:#79c0ff}     /* numbers */
+.op{color:#c9d1d9}      /* operators */
+.pkg{color:#ffa657}     /* packages/imports */
+.fl{color:#f0883e}      /* flags */
+
+/* --- Features --- */
+.feat-category{margin-bottom:48px}
+.feat-category:last-child{margin-bottom:0}
+.feat-cat-title{
+  font-size:14px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--text-dim);
+  margin-bottom:16px;padding-bottom:8px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+}
+.feat-cat-title .dot{
+  width:8px;height:8px;border-radius:50%;
+}
+.dot-blue{background:var(--blue)}
+.dot-amber{background:var(--amber)}
+.dot-green{background:var(--green)}
+.dot-purple{background:var(--purple)}
+.feat-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:12px;
+}
+.feat-item{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:12px 14px;
+  border-radius:6px;
+  background:var(--bg-card);
+  border:1px solid transparent;
+  font-size:13px;
+  transition:border-color .2s;
+}
+.feat-item:hover{border-color:var(--border)}
+.feat-item .check{
+  color:var(--green);flex-shrink:0;
+  margin-top:1px;font-weight:700;font-size:14px;
+}
+.feat-item span{color:var(--text-dim)}
+.feat-item strong{color:var(--text);font-weight:600}
+
+/* --- Architecture --- */
+.arch-section{background:var(--bg-raised)}
+.arch-diagram{
+  background:var(--bg-code);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:28px 32px;
+  font-family:var(--font-mono);
+  font-size:13px;
+  line-height:1.7;
+  overflow-x:auto;
+  color:var(--text-code);
+}
+.arch-layer{
+  display:flex;align-items:stretch;gap:0;
+  margin-bottom:2px;
+}
+.arch-box{
+  padding:10px 16px;
+  text-align:center;
+  border:1px solid var(--border);
+  flex:1;
+  min-width:0;
+  font-size:12px;
+  font-weight:600;
+}
+.arch-box.full{flex:1 0 100%}
+.arch-l1{background:rgba(59,130,246,.1);color:var(--blue);border-color:rgba(59,130,246,.25)}
+.arch-l2{background:rgba(245,158,11,.08);color:var(--amber);border-color:rgba(245,158,11,.2)}
+.arch-l3{background:rgba(167,139,250,.08);color:var(--purple);border-color:rgba(167,139,250,.2)}
+.arch-l4{background:rgba(34,197,94,.08);color:var(--green);border-color:rgba(34,197,94,.2)}
+.arch-l5{background:rgba(239,68,68,.06);color:var(--red);border-color:rgba(239,68,68,.15)}
+.arch-arrow{
+  text-align:center;color:var(--text-dim);
+  font-size:12px;padding:3px 0;
+}
+.arch-caption{
+  margin-top:24px;color:var(--text-dim);font-size:13px;
+  font-family:var(--font-sans);
+}
+.arch-caption code{
+  font-family:var(--font-mono);background:rgba(255,255,255,.06);
+  padding:2px 6px;border-radius:4px;font-size:12px;color:var(--text-code);
+}
+
+/* --- Install --- */
+.install-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:16px;
+}
+.install-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;
+}
+.install-card h3{
+  font-size:14px;font-weight:700;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.install-card h3 .badge{
+  font-size:11px;font-weight:600;
+  background:rgba(59,130,246,.15);color:var(--blue);
+  padding:2px 8px;border-radius:10px;
+}
+.install-card pre{
+  margin:0;font-size:12px;padding:14px 16px;
+}
+
+/* --- Footer --- */
+footer{
+  border-top:1px solid var(--border);
+  padding:40px 0;
+}
+.footer-inner{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:16px;
+}
+.footer-left{font-size:14px;color:var(--text-dim)}
+.footer-left a{color:var(--text);text-decoration:none}
+.footer-left a:hover{text-decoration:underline}
+.footer-right{display:flex;gap:20px}
+.footer-right a{color:var(--text-dim);text-decoration:none;font-size:13px;transition:color .2s}
+.footer-right a:hover{color:var(--text)}
+
+/* --- Content distillation table --- */
+.distill-table{
+  width:100%;border-collapse:collapse;
+  margin-top:16px;font-size:13px;
+}
+.distill-table th{
+  text-align:left;padding:10px 14px;
+  font-weight:600;color:var(--text-dim);
+  border-bottom:1px solid var(--border);
+  font-size:12px;text-transform:uppercase;letter-spacing:.05em;
+}
+.distill-table td{
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  color:var(--text-code);
+}
+.distill-table tr:last-child td{border-bottom:none}
+.distill-table code{
+  font-family:var(--font-mono);background:rgba(255,255,255,.05);
+  padding:2px 6px;border-radius:4px;font-size:12px;
+}
+.distill-table .size{color:var(--amber);font-weight:600}
+
+/* --- Responsive --- */
+@media(max-width:768px){
+  .nav-links{
+    display:none;flex-direction:column;
+    position:absolute;top:56px;left:0;right:0;
+    background:rgba(10,14,26,.97);
+    backdrop-filter:blur(12px);
+    padding:16px 24px;gap:12px;
+    border-bottom:1px solid var(--border);
+  }
+  .nav-links.open{display:flex}
+  .nav-toggle{display:block}
+  .hero{padding:120px 0 60px}
+  h1{font-size:clamp(36px,10vw,56px)}
+  section{padding:56px 0}
+  .install-bar code{font-size:12px;padding:10px 12px}
+  .arch-layer{flex-direction:column}
+  .arch-box{min-width:100%}
+  .feat-grid{grid-template-columns:1fr}
+  .why-grid{grid-template-columns:1fr}
+  .footer-inner{flex-direction:column;text-align:center}
+  pre{font-size:12px;padding:16px}
+}
+@media(max-width:480px){
+  .hero-links{flex-direction:column;align-items:stretch}
+  .hero-links a{justify-content:center}
+  .install-grid{grid-template-columns:1fr}
+}
+
+/* --- Scroll animation --- */
+.fade-in{opacity:0;transform:translateY(16px);transition:opacity .5s,transform .5s}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+
+/* --- Focus states --- */
+a:focus-visible,button:focus-visible{
+  outline:2px solid var(--blue);
+  outline-offset:2px;
+  border-radius:4px;
+}
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- Nav -->
+<nav aria-label="Main navigation">
+  <div class="container">
+    <a href="#" class="nav-logo" aria-label="Scout home">
+      <span class="sigil" aria-hidden="true">S</span>
+      Scout
+    </a>
+    <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false" onclick="this.setAttribute('aria-expanded',this.getAttribute('aria-expanded')==='false');document.querySelector('.nav-links').classList.toggle('open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <ul class="nav-links" role="list">
+      <li><a href="#why">Why Scout</a></li>
+      <li><a href="#examples">Examples</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#install">Install</a></li>
+    </ul>
+    <a href="https://github.com/felixgeelhaar/browse-go" class="nav-gh" aria-label="GitHub repository">
+      <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    </a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<main id="main">
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      <span>Browser automation for Go</span>
+      <code>v0.x</code>
+    </div>
+    <h1>Scout</h1>
+    <p class="hero-sub">
+      <strong>Gin-like browser automation</strong> with pure CDP, agent-optimized APIs, and a single-binary MCP server. No rod, no chromedp, no Node.js.
+    </p>
+    <div class="install-bar" role="region" aria-label="Install command">
+      <code><span class="prompt" aria-hidden="true">$ </span>go get github.com/felixgeelhaar/browse-go</code>
+      <button class="copy-btn" onclick="copyInstall(this)" aria-label="Copy install command">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      </button>
+    </div>
+    <div class="hero-links">
+      <a href="#examples" class="btn-primary">See examples</a>
+      <a href="https://github.com/felixgeelhaar/browse-go" class="btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Why Scout -->
+<section id="why" class="fade-in">
+  <div class="container">
+    <p class="section-label">Why Scout</p>
+    <h2 class="section-title">Built different.</h2>
+    <p class="section-desc">Scout is not another wrapper around DevTools Protocol libraries. It is the protocol library.</p>
+    <div class="why-grid">
+
+      <div class="why-card">
+        <div class="icon icon-cdp" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="8"/><path d="M10 2v16M2 10h16"/><path d="M10 2a14 14 0 014 8 14 14 0 01-4 8M10 2a14 14 0 00-4 8 14 14 0 004 8"/></svg>
+        </div>
+        <h3>Pure CDP. Zero wrappers.</h3>
+        <p>Direct WebSocket connection to Chrome DevTools Protocol. No rod, no chromedp, no Playwright dependency tree. One binary, one connection, full control.</p>
+      </div>
+
+      <div class="why-card">
+        <div class="icon icon-agent" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h12v10H4z" rx="1.5"/><path d="M7 17h6M10 14v3"/><circle cx="7" cy="9" r="1.5"/><circle cx="13" cy="9" r="1.5"/></svg>
+        </div>
+        <h3>Agent-first design.</h3>
+        <p>Structured JSON output, DOM diffing that saves 50-80% tokens, content distillation at 5 levels, token budgets, and semantic form filling. Built for LLMs, not humans.</p>
+      </div>
+
+      <div class="why-card">
+        <div class="icon icon-mcp" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 7h14M7 7v10"/></svg>
+        </div>
+        <h3>29-tool MCP server.</h3>
+        <p>Single Go binary. No Node.js runtime, no Python interpreter. Just <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px">scout mcp serve</code> and your AI agent has a browser.</p>
+      </div>
+
+      <div class="why-card">
+        <div class="icon icon-mw" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5h12M4 10h12M4 15h12"/><circle cx="8" cy="5" r="1.5" fill="currentColor"/><circle cx="14" cy="10" r="1.5" fill="currentColor"/><circle cx="6" cy="15" r="1.5" fill="currentColor"/></svg>
+        </div>
+        <h3>Gin-like middleware.</h3>
+        <p>Compose retry, timeout, circuit breaker, rate limit, and bulkhead patterns exactly like Gin HTTP middleware. If you know Gin, you know Scout.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Code Examples -->
+<section id="examples" class="code-section fade-in">
+  <div class="container">
+    <p class="section-label">Code</p>
+    <h2 class="section-title">Four ways to use Scout.</h2>
+    <p class="section-desc">A Go library, an agent package, a CLI, and an MCP server. Same engine, different interfaces.</p>
+
+    <div class="tab-bar" role="tablist" aria-label="Code examples">
+      <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-core" id="tab-core" onclick="switchTab('core')">Core API</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-agent" id="tab-agent" onclick="switchTab('agent')">Agent API</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-cli" id="tab-cli" onclick="switchTab('cli')">CLI</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-mcp" id="tab-mcp" onclick="switchTab('mcp')">MCP Server</button>
+    </div>
+
+    <div class="tab-panel active" role="tabpanel" id="panel-core" aria-labelledby="tab-core">
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border);border-bottom:none;border-radius:var(--radius) var(--radius) 0 0;">
+        <p style="color:var(--amber);font-weight:600;font-size:14px;margin-bottom:6px;">For Go developers building automation scripts and pipelines</p>
+        <p style="color:var(--text-dim);font-size:14px;line-height:1.5;">Use the core API when you need full control: named tasks, middleware composition (retry, timeout, circuit breaker, stealth), grouped workflows, and the familiar Gin-style <code style="color:var(--text-code);font-size:13px;">Engine → Context → HandlerFunc</code> pattern. Ideal for scrapers, testing tools, monitoring systems, and CI pipelines.</p>
+      </div>
+      <pre style="border-radius:0 0 var(--radius) var(--radius);"><code><span class="cm">// Gin-like engine with middleware composition</span>
+<span class="pkg">engine</span> := <span class="pkg">browse</span>.<span class="fn">Default</span>(<span class="pkg">browse</span>.<span class="fn">WithHeadless</span>(<span class="kw">true</span>))
+<span class="pkg">engine</span>.<span class="fn">MustLaunch</span>()
+<span class="kw">defer</span> <span class="pkg">engine</span>.<span class="fn">Close</span>()
+
+<span class="cm">// Add resilience middleware</span>
+<span class="pkg">engine</span>.<span class="fn">Use</span>(<span class="pkg">middleware</span>.<span class="fn">Timeout</span>(<span class="num">30</span> * <span class="pkg">time</span>.<span class="tp">Second</span>))
+<span class="pkg">engine</span>.<span class="fn">Use</span>(<span class="pkg">middleware</span>.<span class="fn">Retry</span>(<span class="pkg">middleware</span>.<span class="tp">RetryConfig</span>{<span class="tp">MaxAttempts</span>: <span class="num">3</span>}))
+<span class="pkg">engine</span>.<span class="fn">Use</span>(<span class="pkg">middleware</span>.<span class="fn">Stealth</span>())
+
+<span class="cm">// Define and run tasks</span>
+<span class="pkg">engine</span>.<span class="fn">Task</span>(<span class="str">"scrape-prices"</span>, <span class="kw">func</span>(<span class="pkg">c</span> *<span class="pkg">browse</span>.<span class="tp">Context</span>) {
+    <span class="pkg">c</span>.<span class="fn">MustNavigate</span>(<span class="str">"https://shop.example.com"</span>)
+    <span class="pkg">c</span>.<span class="fn">El</span>(<span class="str">"input[name=q]"</span>).<span class="fn">MustInput</span>(<span class="str">"mechanical keyboard"</span>)
+    <span class="pkg">c</span>.<span class="fn">El</span>(<span class="str">"button[type=submit]"</span>).<span class="fn">MustClick</span>()
+
+    <span class="pkg">prices</span> := <span class="pkg">c</span>.<span class="fn">ElAll</span>(<span class="str">".product .price"</span>).<span class="fn">MustTexts</span>()
+    <span class="pkg">c</span>.<span class="fn">Set</span>(<span class="str">"prices"</span>, <span class="pkg">prices</span>)
+})
+
+<span class="pkg">engine</span>.<span class="fn">Run</span>(<span class="str">"scrape-prices"</span>)</code></pre>
+    </div>
+
+    <div class="tab-panel" role="tabpanel" id="panel-agent" aria-labelledby="tab-agent">
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border);border-bottom:none;border-radius:var(--radius) var(--radius) 0 0;">
+        <p style="color:var(--blue);font-weight:600;font-size:14px;margin-bottom:6px;">For AI agent developers who need structured browser interaction</p>
+        <p style="color:var(--text-dim);font-size:14px;line-height:1.5;">Use the agent API when building autonomous agents that browse the web. Every method returns JSON-serializable structs, content is auto-truncated for LLM context windows, all operations auto-wait, and the session is goroutine-safe. DOM diffing, semantic form filling, annotated screenshots, network capture, and token budgets are built in — your agent thinks less and acts more.</p>
+      </div>
+      <pre style="border-radius:0 0 var(--radius) var(--radius);"><code><span class="cm">// Session-based API optimized for AI agents</span>
+<span class="pkg">session</span>, _ := <span class="pkg">agent</span>.<span class="fn">NewSession</span>(<span class="pkg">agent</span>.<span class="tp">SessionConfig</span>{<span class="tp">Headless</span>: <span class="kw">true</span>})
+<span class="kw">defer</span> <span class="pkg">session</span>.<span class="fn">Close</span>()
+
+<span class="cm">// Navigate and observe — structured JSON, not HTML soup</span>
+<span class="pkg">session</span>.<span class="fn">Navigate</span>(<span class="str">"https://app.example.com"</span>)
+<span class="pkg">obs</span>, _ := <span class="pkg">session</span>.<span class="fn">Observe</span>()        <span class="cm">// links, inputs, buttons, text</span>
+
+<span class="cm">// Semantic form filling — no CSS selectors needed</span>
+<span class="pkg">session</span>.<span class="fn">FillFormSemantic</span>(<span class="kw">map</span>[<span class="tp">string</span>]<span class="tp">string</span>{
+    <span class="str">"Email"</span>:    <span class="str">"user@example.com"</span>,
+    <span class="str">"Password"</span>: <span class="str">"secret123"</span>,
+})
+
+<span class="cm">// DOM diff — only what changed (saves 50-80% tokens)</span>
+<span class="pkg">session</span>.<span class="fn">Click</span>(<span class="str">"#login"</span>)
+_, <span class="pkg">diff</span>, _ := <span class="pkg">session</span>.<span class="fn">ObserveDiff</span>()
+<span class="cm">// diff.Added: [{Tag:"div", ID:"dashboard", Text:"Welcome!"}]</span>
+
+<span class="cm">// Visual grounding — click by label number, not selector</span>
+<span class="pkg">result</span>, _ := <span class="pkg">session</span>.<span class="fn">AnnotatedScreenshot</span>()
+<span class="pkg">session</span>.<span class="fn">ClickLabel</span>(<span class="num">7</span>)  <span class="cm">// click element labeled [7]</span>
+
+<span class="cm">// Network capture — read API responses directly</span>
+<span class="pkg">session</span>.<span class="fn">EnableNetworkCapture</span>(<span class="str">"/api/"</span>)
+<span class="pkg">captured</span> := <span class="pkg">session</span>.<span class="fn">CapturedRequests</span>(<span class="str">"/api/users"</span>)</code></pre>
+    </div>
+
+    <div class="tab-panel" role="tabpanel" id="panel-cli" aria-labelledby="tab-cli">
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border);border-bottom:none;border-radius:var(--radius) var(--radius) 0 0;">
+        <p style="color:var(--green);font-weight:600;font-size:14px;margin-bottom:6px;">For quick tasks, shell scripts, and CI pipelines</p>
+        <p style="color:var(--text-dim);font-size:14px;line-height:1.5;">Use the CLI for one-shot operations without writing Go code. Each command launches a browser, navigates, performs one action, outputs the result, and exits. Pipe JSON output to <code style="color:var(--text-code);font-size:13px;">jq</code>, save screenshots in CI, extract data in shell scripts, or quickly inspect a page before writing automation code.</p>
+      </div>
+      <pre style="border-radius:0 0 var(--radius) var(--radius);"><code><span class="cm"># Navigate and observe</span>
+<span class="fl">$</span> scout observe https://example.com
+{
+  <span class="str">"title"</span>: <span class="str">"Example Domain"</span>,
+  <span class="str">"links"</span>: [<span class="str">"More information..."</span>],
+  <span class="str">"inputs"</span>: [],
+  <span class="str">"buttons"</span>: []
+}
+
+<span class="cm"># Get page as markdown</span>
+<span class="fl">$</span> scout markdown https://news.ycombinator.com
+
+<span class="cm"># Screenshot</span>
+<span class="fl">$</span> scout screenshot https://github.com --output gh.png
+Saved screenshot to gh.png (284519 bytes)
+
+<span class="cm"># Extract data</span>
+<span class="fl">$</span> scout extract https://example.com h1
+Example Domain
+
+<span class="cm"># Discover form fields</span>
+<span class="fl">$</span> scout form discover https://login.example.com
+
+<span class="cm"># Detect frontend frameworks</span>
+<span class="fl">$</span> scout frameworks https://react.dev
+react
+nextjs</code></pre>
+    </div>
+
+    <div class="tab-panel" role="tabpanel" id="panel-mcp" aria-labelledby="tab-mcp">
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border);border-bottom:none;border-radius:var(--radius) var(--radius) 0 0;">
+        <p style="color:var(--purple);font-weight:600;font-size:14px;margin-bottom:6px;">For giving AI assistants (Claude, Cursor, etc.) browser superpowers</p>
+        <p style="color:var(--text-dim);font-size:14px;line-height:1.5;">Use the MCP server to let your AI assistant browse the web, fill forms, extract data, and take screenshots — all via the standard Model Context Protocol. A single Go binary with 29 tools, zero runtime dependencies. Just install and add one line to your MCP config. The AI decides which tools to call; Scout handles the browser.</p>
+      </div>
+      <pre style="border-radius:0 0 var(--radius) var(--radius);"><code><span class="cm"># Add to Claude Code</span>
+<span class="fl">$</span> claude mcp add scout -- scout mcp serve
+
+<span class="cm"># Or configure in claude_desktop_config.json / mcp.json</span>
+{
+  <span class="str">"mcpServers"</span>: {
+    <span class="str">"scout"</span>: {
+      <span class="str">"command"</span>: <span class="str">"scout"</span>,
+      <span class="str">"args"</span>: [<span class="str">"mcp"</span>, <span class="str">"serve"</span>]
+    }
+  }
+}
+
+<span class="cm"># 29 tools available:</span>
+<span class="cm">#</span>
+<span class="cm"># Navigation:  navigate, observe, observe_diff, observe_with_budget</span>
+<span class="cm"># Interaction: click, click_label, type, fill_form,</span>
+<span class="cm">#              fill_form_semantic, dispatch_event</span>
+<span class="cm"># Extraction:  extract, extract_all, extract_table,</span>
+<span class="cm">#              markdown, readable_text, accessibility_tree</span>
+<span class="cm"># Capture:     screenshot, annotated_screenshot, pdf</span>
+<span class="cm"># Network:     enable_network_capture, network_requests</span>
+<span class="cm"># SPA:         wait_spa, detect_frameworks,</span>
+<span class="cm">#              component_state, app_state</span>
+<span class="cm"># Utility:     has_element, wait_for, discover_form, eval</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- Content Distillation -->
+<section class="fade-in">
+  <div class="container">
+    <p class="section-label">Token efficiency</p>
+    <h2 class="section-title">Five levels of content distillation.</h2>
+    <p class="section-desc">Pages return megabytes of HTML. Scout gives your agent exactly the right amount of information.</p>
+    <div style="overflow-x:auto">
+    <table class="distill-table">
+      <thead>
+        <tr><th>Method</th><th>Output size</th><th>Best for</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>Observe()</code></td><td class="size">~2-5 KB</td><td>Deciding what to click or fill</td></tr>
+        <tr><td><code>ObserveDiff()</code></td><td class="size">~0.5-2 KB</td><td>Seeing only what changed after an action</td></tr>
+        <tr><td><code>Markdown()</code></td><td class="size">~2-8 KB</td><td>Reading page content in a compact format</td></tr>
+        <tr><td><code>ReadableText()</code></td><td class="size">~1-4 KB</td><td>Main article or body text only</td></tr>
+        <tr><td><code>AccessibilityTree()</code></td><td class="size">~1-4 KB</td><td>Compact semantic element tree</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features" class="fade-in">
+  <div class="container">
+    <p class="section-label">Features</p>
+    <h2 class="section-title">Everything, composed.</h2>
+    <p class="section-desc">Organized by layer. Each feature is a building block that composes with the rest.</p>
+
+    <div class="feat-category">
+      <h3 class="feat-cat-title"><span class="dot dot-blue" aria-hidden="true"></span> Core Engine</h3>
+      <div class="feat-grid">
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Pure CDP</strong> over WebSocket</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Gin-like</strong> Engine / Context / Group</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Auto-wait</strong> on navigation and elements</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>CSS selectors</strong> with chaining</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Page pool</strong> for concurrent tasks</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Remote CDP</strong> for cloud browsers</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Table extraction</strong> to structured data</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>PDF generation</strong> and screenshots</span></div>
+      </div>
+    </div>
+
+    <div class="feat-category">
+      <h3 class="feat-cat-title"><span class="dot dot-amber" aria-hidden="true"></span> Agent Package</h3>
+      <div class="feat-grid">
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Structured JSON</strong> output</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>DOM diffing</strong> (50-80% token savings)</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Token budgets</strong> for observation</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Semantic form fill</strong> by field name</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Annotated screenshots</strong> with labels</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Visual grounding</strong> via click_label</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Network capture</strong> for XHR/fetch</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Persistent profiles</strong> (cookies + storage)</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Screenshot auto-compress</strong> for LLMs</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>5-level content</strong> distillation</span></div>
+      </div>
+    </div>
+
+    <div class="feat-category">
+      <h3 class="feat-cat-title"><span class="dot dot-purple" aria-hidden="true"></span> Middleware</h3>
+      <div class="feat-grid">
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Retry</strong> with backoff</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Timeout</strong> per task</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Circuit breaker</strong> (fortify)</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Rate limit</strong> requests</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Bulkhead</strong> isolation</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Stealth mode</strong> anti-detection</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Auth</strong> (Bearer, Basic, Cookie)</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Resource blocking</strong> (images, fonts)</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Viewport</strong> and slow motion</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Screenshot on error</strong></span></div>
+      </div>
+    </div>
+
+    <div class="feat-category">
+      <h3 class="feat-cat-title"><span class="dot dot-green" aria-hidden="true"></span> Framework Support</h3>
+      <div class="feat-grid">
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>React</strong> + Next.js + Gatsby</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Vue 2/3</strong> + Nuxt</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Angular</strong></span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Svelte</strong> + SvelteKit</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Solid</strong> + Preact + Lit</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Alpine</strong> + HTMX + Stimulus</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Qwik</strong> + Astro + Remix</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Ember</strong></span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Architecture -->
+<section id="architecture" class="arch-section fade-in">
+  <div class="container">
+    <p class="section-label">Architecture</p>
+    <h2 class="section-title">Layer stack.</h2>
+    <p class="section-desc">Four layers from user-facing interfaces down to the wire protocol.</p>
+
+    <div class="arch-diagram" role="img" aria-label="Architecture layer diagram showing CLI and MCP at top, agent session layer, core engine with middleware, and CDP WebSocket at bottom">
+
+      <div class="arch-layer">
+        <div class="arch-box arch-l1">CLI<br><span style="font-weight:400;font-size:11px;opacity:.7">scout observe / screenshot / extract</span></div>
+        <div class="arch-box arch-l1">MCP Server<br><span style="font-weight:400;font-size:11px;opacity:.7">29 tools via stdio</span></div>
+      </div>
+      <div class="arch-arrow" aria-hidden="true">|</div>
+
+      <div class="arch-layer">
+        <div class="arch-box arch-l2 full">Agent Session<br><span style="font-weight:400;font-size:11px;opacity:.7">observe / diff / semantic fill / annotate / network capture / profiles</span></div>
+      </div>
+      <div class="arch-arrow" aria-hidden="true">|</div>
+
+      <div class="arch-layer">
+        <div class="arch-box arch-l3">Engine<br><span style="font-weight:400;font-size:11px;opacity:.7">Task / Context / Group</span></div>
+        <div class="arch-box arch-l3">Middleware<br><span style="font-weight:400;font-size:11px;opacity:.7">retry / timeout / stealth / auth</span></div>
+        <div class="arch-box arch-l3">Page + Selection<br><span style="font-weight:400;font-size:11px;opacity:.7">elements / tables / forms</span></div>
+      </div>
+      <div class="arch-arrow" aria-hidden="true">|</div>
+
+      <div class="arch-layer">
+        <div class="arch-box arch-l4 full">CDP WebSocket<br><span style="font-weight:400;font-size:11px;opacity:.7">pure Chrome DevTools Protocol -- no rod, no chromedp</span></div>
+      </div>
+      <div class="arch-arrow" aria-hidden="true">|</div>
+
+      <div class="arch-layer">
+        <div class="arch-box arch-l5 full">Chrome / Chromium<br><span style="font-weight:400;font-size:11px;opacity:.7">local process or remote via WithRemoteCDP</span></div>
+      </div>
+
+      <p class="arch-caption">
+        Built on <code>bolt</code> (structured logging), <code>fortify</code> (resilience patterns), <code>statekit</code> (state machines), and <code>mcp-go</code> (Model Context Protocol).
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Install -->
+<section id="install" class="fade-in">
+  <div class="container">
+    <p class="section-label">Get started</p>
+    <h2 class="section-title">Install Scout.</h2>
+    <p class="section-desc">As a Go library, a CLI binary, or an MCP server for your AI agent.</p>
+
+    <div class="install-grid">
+
+      <div class="install-card">
+        <h3>Go Library</h3>
+        <pre><code><span class="fl">$</span> go get github.com/felixgeelhaar/browse-go</code></pre>
+      </div>
+
+      <div class="install-card">
+        <h3>Homebrew <span class="badge">macOS / Linux</span></h3>
+        <pre><code><span class="fl">$</span> brew install felixgeelhaar/tap/scout</code></pre>
+      </div>
+
+      <div class="install-card">
+        <h3>Binary</h3>
+        <pre><code><span class="fl">$</span> curl -fsSL https://raw.githubusercontent.com/\
+  felixgeelhaar/browse-go/main/install.sh | bash</code></pre>
+      </div>
+
+      <div class="install-card">
+        <h3>Go Install <span class="badge">CLI</span></h3>
+        <pre><code><span class="fl">$</span> go install github.com/felixgeelhaar/\
+  browse-go/cmd/scout@latest</code></pre>
+      </div>
+
+      <div class="install-card">
+        <h3>Claude Code <span class="badge">MCP</span></h3>
+        <pre><code><span class="fl">$</span> claude mcp add scout -- scout mcp serve</code></pre>
+      </div>
+
+      <div class="install-card">
+        <h3>Claude Desktop / Cursor <span class="badge">MCP</span></h3>
+        <pre><code>{
+  <span class="str">"mcpServers"</span>: {
+    <span class="str">"scout"</span>: {
+      <span class="str">"command"</span>: <span class="str">"scout"</span>,
+      <span class="str">"args"</span>: [<span class="str">"mcp"</span>, <span class="str">"serve"</span>]
+    }
+  }
+}</code></pre>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <a href="https://github.com/felixgeelhaar/browse-go">Scout</a> by <a href="https://github.com/felixgeelhaar">Felix Geelhaar</a>. MIT License.
+      </div>
+      <div class="footer-right">
+        <a href="https://github.com/felixgeelhaar/browse-go">Source</a>
+        <a href="https://github.com/felixgeelhaar/browse-go/issues">Issues</a>
+        <a href="https://pkg.go.dev/github.com/felixgeelhaar/browse-go">pkg.go.dev</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Copy install command
+function copyInstall(btn){
+  var text='go get github.com/felixgeelhaar/browse-go';
+  navigator.clipboard.writeText(text).then(function(){
+    btn.classList.add('copied');
+    btn.setAttribute('aria-label','Copied!');
+    btn.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+    setTimeout(function(){
+      btn.classList.remove('copied');
+      btn.setAttribute('aria-label','Copy install command');
+      btn.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>';
+    },2000);
+  });
+}
+
+// Tab switching
+function switchTab(name){
+  var tabs=document.querySelectorAll('.tab-btn');
+  var panels=document.querySelectorAll('.tab-panel');
+  for(var i=0;i<tabs.length;i++){
+    var isActive=tabs[i].id==='tab-'+name;
+    tabs[i].classList.toggle('active',isActive);
+    tabs[i].setAttribute('aria-selected',isActive?'true':'false');
+  }
+  for(var j=0;j<panels.length;j++){
+    panels[j].classList.toggle('active',panels[j].id==='panel-'+name);
+  }
+}
+
+// Keyboard tab navigation
+document.querySelector('.tab-bar').addEventListener('keydown',function(e){
+  var tabs=Array.from(this.querySelectorAll('.tab-btn'));
+  var idx=tabs.indexOf(document.activeElement);
+  if(idx<0)return;
+  var next=-1;
+  if(e.key==='ArrowRight')next=(idx+1)%tabs.length;
+  else if(e.key==='ArrowLeft')next=(idx-1+tabs.length)%tabs.length;
+  if(next>=0){
+    e.preventDefault();
+    tabs[next].focus();
+    tabs[next].click();
+  }
+});
+
+// Scroll fade-in
+(function(){
+  var els=document.querySelectorAll('.fade-in');
+  if(!('IntersectionObserver' in window)){
+    for(var i=0;i<els.length;i++)els[i].classList.add('visible');
+    return;
+  }
+  var obs=new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        entry.target.classList.add('visible');
+        obs.unobserve(entry.target);
+      }
+    });
+  },{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+  els.forEach(function(el){obs.observe(el)});
+})();
+</script>
+</body>
+</html>

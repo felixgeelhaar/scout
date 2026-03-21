@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -qE '\\.go$' && gofmt -w \"$f\" 2>/dev/null; } || true",
+            "timeout": 10,
+            "statusMessage": "Formatting Go file..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/felixgeelhaar/Developer/projects/open_source/browse-go && bash scripts/pre-commit.sh 2>&1 | tail -20; exit_code=${PIPESTATUS[0]}; if [ $exit_code -ne 0 ]; then echo '{\"decision\":\"block\",\"reason\":\"Pre-commit checks failed. Fix the issues before stopping.\"}'; fi",
+            "timeout": 120,
+            "statusMessage": "Running pre-commit checks (gofmt, vet, lint, tests, coverctl, nox)..."
+          }
+        ]
+      }
+    ]
+  }
+}
