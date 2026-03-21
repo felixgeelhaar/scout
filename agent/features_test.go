@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/user/browse-go/agent"
+	"github.com/felixgeelhaar/scout/agent"
 )
 
 func featureTestServer() *httptest.Server {

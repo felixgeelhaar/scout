@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	browse "github.com/user/browse-go"
+	browse "github.com/felixgeelhaar/scout"
 )
 
 // Session manages a stateful browser automation session for an agent.

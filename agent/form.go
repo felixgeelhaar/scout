@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	browse "github.com/user/browse-go"
+	browse "github.com/felixgeelhaar/scout"
 )
 
 // DiscoverForm analyzes form fields on the page and returns their labels and selectors.

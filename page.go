@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/user/browse-go/internal/cdp"
-	"github.com/user/browse-go/internal/wait"
+	"github.com/felixgeelhaar/scout/internal/cdp"
+	"github.com/felixgeelhaar/scout/internal/wait"
 )
 
 // Page wraps a CDP session for a single browser tab.

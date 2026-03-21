@@ -1,4 +1,4 @@
-module github.com/user/browse-go
+module github.com/felixgeelhaar/scout
 
 go 1.25.0
 

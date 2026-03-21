@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	browse "github.com/user/browse-go"
+	browse "github.com/felixgeelhaar/scout"
 )
 
 // CookieAuth returns middleware that injects cookies before task execution.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	browse "github.com/user/browse-go"
+	browse "github.com/felixgeelhaar/scout"
 )
 
 // BlockResources returns middleware that blocks requests for specified resource types.

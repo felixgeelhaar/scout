@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	browse "github.com/user/browse-go"
+	browse "github.com/felixgeelhaar/scout"
 
 	"github.com/felixgeelhaar/fortify/timeout"
 )

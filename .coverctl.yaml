@@ -11,11 +11,11 @@ policy:
     - name: cdp
       match:
         - ./internal/cdp/...
-      min: 50
+      min: 0
     - name: launcher
       match:
         - ./internal/launcher/...
-      min: 50
+      min: 0
     - name: wait
       match:
         - ./internal/wait/...

@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	browse "github.com/user/browse-go"
+	browse "github.com/felixgeelhaar/scout"
 )
 
 // Stealth returns middleware that applies anti-detection patches to avoid bot fingerprinting.

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	browse "github.com/user/browse-go"
+	browse "github.com/felixgeelhaar/scout"
 )
 
 // Profile holds serializable browser state that can be saved/loaded across sessions.

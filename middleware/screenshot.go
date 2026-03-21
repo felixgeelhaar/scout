@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	browse "github.com/user/browse-go"
+	browse "github.com/felixgeelhaar/scout"
 )
 
 // ScreenshotOnError returns middleware that captures a screenshot when a task fails.

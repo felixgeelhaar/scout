@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/user/browse-go/agent"
+	"github.com/felixgeelhaar/scout/agent"
 )
 
 func testServer() *httptest.Server {

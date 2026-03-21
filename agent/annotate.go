@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	browse "github.com/user/browse-go"
+	browse "github.com/felixgeelhaar/scout"
 )
 
 // AnnotatedScreenshot captures a screenshot with numbered labels overlaid on

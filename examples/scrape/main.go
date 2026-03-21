@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 
-	browse "github.com/user/browse-go"
+	browse "github.com/felixgeelhaar/scout"
 )
 
 func main() {

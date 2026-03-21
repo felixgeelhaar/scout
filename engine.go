@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/user/browse-go/internal/cdp"
-	"github.com/user/browse-go/internal/launcher"
+	"github.com/felixgeelhaar/scout/internal/cdp"
+	"github.com/felixgeelhaar/scout/internal/launcher"
 )
 
 // taskEntry stores a registered task with its full handler chain.

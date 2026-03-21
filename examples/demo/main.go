@@ -14,8 +14,8 @@ import (
 	"os"
 	"time"
 
-	browse "github.com/user/browse-go"
-	"github.com/user/browse-go/middleware"
+	browse "github.com/felixgeelhaar/scout"
+	"github.com/felixgeelhaar/scout/middleware"
 )
 
 func main() {

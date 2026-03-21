@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	browse "github.com/user/browse-go"
+	browse "github.com/felixgeelhaar/scout"
 )
 
 // Viewport returns middleware that sets the viewport dimensions for the task's page.
