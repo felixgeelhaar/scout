@@ -84,8 +84,12 @@ type NetworkRequestsInput struct {
 	Pattern string `json:"pattern,omitempty" jsonschema:"description=URL substring filter"`
 }
 
+type AnnotatedScreenshotInput struct {
+	IncludeImage bool `json:"include_image,omitempty" jsonschema:"description=Include base64 image data in response. Default false to avoid large responses. Use screenshot tool separately if you need the image."`
+}
+
 type AnnotatedScreenshotResult struct {
-	Image    string                   `json:"image"`
+	Image    string                   `json:"image,omitempty"`
 	Elements []agent.AnnotatedElement `json:"elements"`
 	Count    int                      `json:"count"`
 }
@@ -432,17 +436,20 @@ Use 'configure' to switch between headless and visible browser modes without res
 
 	srv.Tool("annotated_screenshot").
 		ReadOnly().
-		Description("Screenshot with numbered labels on interactive elements. Use click_label to interact by number.").
-		Handler(func(ctx context.Context, input ObserveInput) (*AnnotatedScreenshotResult, error) {
+		Description("Label all interactive elements with numbers and return their selectors/info. By default returns only the element list (compact). Set include_image=true to also get the screenshot with labels drawn on it.").
+		Handler(func(ctx context.Context, input AnnotatedScreenshotInput) (*AnnotatedScreenshotResult, error) {
 			result, err := s().AnnotatedScreenshot()
 			if err != nil {
 				return nil, err
 			}
-			return &AnnotatedScreenshotResult{
-				Image:    "data:image/png;base64," + base64.StdEncoding.EncodeToString(result.Image),
+			out := &AnnotatedScreenshotResult{
 				Elements: result.Elements,
 				Count:    result.Count,
-			}, nil
+			}
+			if input.IncludeImage {
+				out.Image = "data:image/png;base64," + base64.StdEncoding.EncodeToString(result.Image)
+			}
+			return out, nil
 		})
 
 	srv.Tool("pdf").
