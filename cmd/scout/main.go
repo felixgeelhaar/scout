@@ -182,7 +182,7 @@ Commands:
   version                           Print version information
 
 Global flags:
-  --headless=false                  Run with visible browser window
+  --headless                        Run without browser window (for scripts/CI)
   --timeout=30s                     Page operation timeout
 
 MCP Configuration:

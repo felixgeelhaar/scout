@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/felixgeelhaar/mcp-go"
@@ -103,6 +104,10 @@ type DispatchEventInput struct {
 	Detail    map[string]any `json:"detail,omitempty" jsonschema:"description=Event detail/payload data"`
 }
 
+type ConfigureInput struct {
+	Headless bool `json:"headless" jsonschema:"description=Run browser in headless mode (no visible window). Default true."`
+}
+
 type ObserveDiffResult struct {
 	Observation *agent.Observation `json:"observation"`
 	Diff        *agent.DOMDiff     `json:"diff"`
@@ -119,14 +124,47 @@ func serveMCP() {
 		cancel()
 	}()
 
-	session, err := agent.NewSession(agent.SessionConfig{
-		Headless: true,
-	})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create session: %v\n", err)
-		os.Exit(1)
+	// Lazy session — created on first tool use, can be reconfigured without restart.
+	// All handlers reference `session` which is lazily initialized via ensureSession().
+	var (
+		session    *agent.Session
+		sessionCfg = agent.SessionConfig{Headless: true}
+		sessionMu  sync.Mutex
+	)
+
+	ensureSession := func() error {
+		sessionMu.Lock()
+		defer sessionMu.Unlock()
+		if session != nil {
+			return nil
+		}
+		s, err := agent.NewSession(sessionCfg)
+		if err != nil {
+			return err
+		}
+		session = s
+		return nil
 	}
-	defer func() { _ = session.Close() }()
+
+	reconfigure := func(cfg agent.SessionConfig) error {
+		sessionMu.Lock()
+		defer sessionMu.Unlock()
+		if session != nil {
+			_ = session.Close()
+			session = nil
+		}
+		sessionCfg = cfg
+		// Next tool call will create a new session with updated config
+		return nil
+	}
+
+	defer func() {
+		sessionMu.Lock()
+		if session != nil {
+			_ = session.Close()
+		}
+		sessionMu.Unlock()
+	}()
 
 	srv := mcp.NewServer(mcp.ServerInfo{
 		Name:    "scout",
@@ -138,26 +176,53 @@ func serveMCP() {
 filling forms, extracting data, and taking screenshots. Start with 'navigate' to load a page,
 then use 'observe' to see interactive elements, and perform actions with 'click', 'type',
 'fill_form_semantic', 'extract', 'extract_table', etc. Use 'observe_diff' after actions to
-see only what changed. Use 'annotated_screenshot' for visual element identification.`))
+see only what changed. Use 'annotated_screenshot' for visual element identification.
+Use 'configure' to switch between headless and visible browser modes without restarting.`))
+
+	// s returns the current session, lazily creating it on first use.
+	// Every handler calls this instead of accessing session directly.
+	s := func() *agent.Session {
+		if err := ensureSession(); err != nil {
+			panic(fmt.Sprintf("failed to create browser session: %v", err))
+		}
+		return session
+	}
+
+	// --- Configuration ---
+
+	srv.Tool("configure").
+		Description("Change browser settings without restarting. Use headless=false to see the browser window.").
+		Handler(func(ctx context.Context, input ConfigureInput) (string, error) {
+			if err := reconfigure(agent.SessionConfig{
+				Headless: input.Headless,
+			}); err != nil {
+				return "", err
+			}
+			mode := "headless"
+			if !input.Headless {
+				mode = "visible"
+			}
+			return fmt.Sprintf("Browser reconfigured: %s mode. Next navigation will use the new settings.", mode), nil
+		})
 
 	// --- Navigation & Observation ---
 
 	srv.Tool("navigate").
 		Description("Navigate to a URL. Returns page title and URL.").
 		Handler(func(ctx context.Context, input NavigateInput) (*agent.PageResult, error) {
-			return session.Navigate(input.URL)
+			return s().Navigate(input.URL)
 		})
 
 	srv.Tool("observe").
 		Description("Get a structured snapshot of the current page including all links, inputs, buttons, and visible text.").
 		Handler(func(ctx context.Context, input ObserveInput) (*agent.Observation, error) {
-			return session.Observe()
+			return s().Observe()
 		})
 
 	srv.Tool("observe_diff").
 		Description("Observe the page and return only what changed since the last observation. Much more token-efficient.").
 		Handler(func(ctx context.Context, input ObserveInput) (*ObserveDiffResult, error) {
-			obs, diff, err := session.ObserveDiff()
+			obs, diff, err := s().ObserveDiff()
 			if err != nil {
 				return nil, err
 			}
@@ -167,7 +232,7 @@ see only what changed. Use 'annotated_screenshot' for visual element identificat
 	srv.Tool("observe_with_budget").
 		Description("Observe the page constrained to an approximate token budget. Prioritizes interactive elements.").
 		Handler(func(ctx context.Context, input ObserveWithBudgetInput) (*agent.Observation, error) {
-			return session.ObserveWithBudget(input.Budget)
+			return s().ObserveWithBudget(input.Budget)
 		})
 
 	// --- Interaction ---
@@ -176,39 +241,39 @@ see only what changed. Use 'annotated_screenshot' for visual element identificat
 		Description("Click an element by CSS selector. Set wait=true for navigation clicks.").
 		Handler(func(ctx context.Context, input ClickInput) (*agent.PageResult, error) {
 			if input.Wait {
-				return session.ClickAndWait(input.Selector)
+				return s().ClickAndWait(input.Selector)
 			}
-			return session.Click(input.Selector)
+			return s().Click(input.Selector)
 		})
 
 	srv.Tool("click_label").
 		Description("Click an element by its label number from annotated_screenshot.").
 		Handler(func(ctx context.Context, input ClickLabelInput) (*agent.PageResult, error) {
-			return session.ClickLabel(input.Label)
+			return s().ClickLabel(input.Label)
 		})
 
 	srv.Tool("type").
 		Description("Type text into an input element. Clears existing value first.").
 		Handler(func(ctx context.Context, input TypeInput) (*agent.ElementResult, error) {
-			return session.Type(input.Selector, input.Text)
+			return s().Type(input.Selector, input.Text)
 		})
 
 	srv.Tool("fill_form").
 		Description("Fill multiple form fields at once. Keys are CSS selectors, values are text to type.").
 		Handler(func(ctx context.Context, input FillFormInput) (*agent.FormResult, error) {
-			return session.FillForm(input.Fields)
+			return s().FillForm(input.Fields)
 		})
 
 	srv.Tool("fill_form_semantic").
 		Description("Fill form fields using human-readable names (e.g., 'Email', 'Password') instead of CSS selectors.").
 		Handler(func(ctx context.Context, input FillFormSemanticInput) (*agent.SemanticFillResult, error) {
-			return session.FillFormSemantic(input.Fields)
+			return s().FillFormSemantic(input.Fields)
 		})
 
 	srv.Tool("dispatch_event").
 		Description("Dispatch a DOM event on an element. Useful for triggering SPA event handlers.").
 		Handler(func(ctx context.Context, input DispatchEventInput) (string, error) {
-			if err := session.DispatchEvent(input.Selector, input.EventType, input.Detail); err != nil {
+			if err := s().DispatchEvent(input.Selector, input.EventType, input.Detail); err != nil {
 				return "", err
 			}
 			return fmt.Sprintf("Dispatched %s on %s", input.EventType, input.Selector), nil
@@ -219,37 +284,37 @@ see only what changed. Use 'annotated_screenshot' for visual element identificat
 	srv.Tool("extract").
 		Description("Extract text content from a single element.").
 		Handler(func(ctx context.Context, input ExtractInput) (*agent.ElementResult, error) {
-			return session.Extract(input.Selector)
+			return s().Extract(input.Selector)
 		})
 
 	srv.Tool("extract_all").
 		Description("Extract text from all elements matching a selector.").
 		Handler(func(ctx context.Context, input ExtractAllInput) (*agent.ExtractAllResult, error) {
-			return session.ExtractAll(input.Selector)
+			return s().ExtractAll(input.Selector)
 		})
 
 	srv.Tool("extract_table").
 		Description("Extract structured data from an HTML table (headers + rows).").
 		Handler(func(ctx context.Context, input ExtractTableInput) (*agent.TableResult, error) {
-			return session.ExtractTable(input.Selector)
+			return s().ExtractTable(input.Selector)
 		})
 
 	srv.Tool("markdown").
 		Description("Get a compact markdown representation of the page. Ideal for LLM processing.").
 		Handler(func(ctx context.Context, input ObserveInput) (string, error) {
-			return session.Markdown()
+			return s().Markdown()
 		})
 
 	srv.Tool("readable_text").
 		Description("Extract just the main readable content, stripping navigation and boilerplate.").
 		Handler(func(ctx context.Context, input ObserveInput) (string, error) {
-			return session.ReadableText()
+			return s().ReadableText()
 		})
 
 	srv.Tool("accessibility_tree").
 		Description("Get a compact accessibility tree showing all interactive elements.").
 		Handler(func(ctx context.Context, input ObserveInput) (string, error) {
-			return session.AccessibilityTree()
+			return s().AccessibilityTree()
 		})
 
 	// --- Capture ---
@@ -257,7 +322,7 @@ see only what changed. Use 'annotated_screenshot' for visual element identificat
 	srv.Tool("screenshot").
 		Description("Capture a PNG screenshot of the current page (auto-compressed to fit LLM contexts).").
 		Handler(func(ctx context.Context, input ScreenshotInput) (string, error) {
-			data, err := session.Screenshot()
+			data, err := s().Screenshot()
 			if err != nil {
 				return "", err
 			}
@@ -267,7 +332,7 @@ see only what changed. Use 'annotated_screenshot' for visual element identificat
 	srv.Tool("annotated_screenshot").
 		Description("Screenshot with numbered labels on interactive elements. Use click_label to interact by number.").
 		Handler(func(ctx context.Context, input ObserveInput) (*AnnotatedScreenshotResult, error) {
-			result, err := session.AnnotatedScreenshot()
+			result, err := s().AnnotatedScreenshot()
 			if err != nil {
 				return nil, err
 			}
@@ -281,7 +346,7 @@ see only what changed. Use 'annotated_screenshot' for visual element identificat
 	srv.Tool("pdf").
 		Description("Generate a PDF of the current page.").
 		Handler(func(ctx context.Context, input PDFInput) (string, error) {
-			data, err := session.PDF()
+			data, err := s().PDF()
 			if err != nil {
 				return "", err
 			}
@@ -293,7 +358,7 @@ see only what changed. Use 'annotated_screenshot' for visual element identificat
 	srv.Tool("enable_network_capture").
 		Description("Start capturing network XHR/fetch responses. Patterns filter by URL substring.").
 		Handler(func(ctx context.Context, input EnableNetworkInput) (string, error) {
-			if err := session.EnableNetworkCapture(input.Patterns...); err != nil {
+			if err := s().EnableNetworkCapture(input.Patterns...); err != nil {
 				return "", err
 			}
 			return "Network capture enabled", nil
@@ -302,7 +367,7 @@ see only what changed. Use 'annotated_screenshot' for visual element identificat
 	srv.Tool("network_requests").
 		Description("Get captured network requests/responses. Call enable_network_capture first.").
 		Handler(func(ctx context.Context, input NetworkRequestsInput) ([]agent.NetworkCapture, error) {
-			return session.CapturedRequests(input.Pattern), nil
+			return s().CapturedRequests(input.Pattern), nil
 		})
 
 	// --- Framework support ---
@@ -310,28 +375,28 @@ see only what changed. Use 'annotated_screenshot' for visual element identificat
 	srv.Tool("wait_spa").
 		Description("Wait for SPA framework (React/Vue/Angular/Next.js/Svelte) to finish rendering.").
 		Handler(func(ctx context.Context, input ObserveInput) (*agent.PageResult, error) {
-			if err := session.WaitForSPA(); err != nil {
+			if err := s().WaitForSPA(); err != nil {
 				return nil, err
 			}
-			return session.Snapshot()
+			return s().Snapshot()
 		})
 
 	srv.Tool("detect_frameworks").
 		Description("Detect which frontend frameworks are active on the page.").
 		Handler(func(ctx context.Context, input ObserveInput) ([]string, error) {
-			return session.DetectedFrameworks()
+			return s().DetectedFrameworks()
 		})
 
 	srv.Tool("component_state").
 		Description("Extract component state/props from any framework (React, Vue, Svelte, Angular, Alpine, Lit).").
 		Handler(func(ctx context.Context, input ComponentStateInput) (map[string]any, error) {
-			return session.ComponentState(input.Selector)
+			return s().ComponentState(input.Selector)
 		})
 
 	srv.Tool("app_state").
 		Description("Extract global app state (Redux, Next.js, Nuxt, Remix, SvelteKit, Gatsby, Astro, Alpine, HTMX).").
 		Handler(func(ctx context.Context, input ObserveInput) (map[string]any, error) {
-			return session.GetAppState()
+			return s().GetAppState()
 		})
 
 	// --- Utility ---
@@ -339,22 +404,22 @@ see only what changed. Use 'annotated_screenshot' for visual element identificat
 	srv.Tool("has_element").
 		Description("Check if an element exists on the page.").
 		Handler(func(ctx context.Context, input HasElementInput) (bool, error) {
-			return session.HasElement(input.Selector), nil
+			return s().HasElement(input.Selector), nil
 		})
 
 	srv.Tool("wait_for").
 		Description("Wait for an element to appear in the DOM.").
 		Handler(func(ctx context.Context, input WaitForInput) (*agent.PageResult, error) {
-			if err := session.WaitFor(input.Selector); err != nil {
+			if err := s().WaitFor(input.Selector); err != nil {
 				return nil, err
 			}
-			return session.Snapshot()
+			return s().Snapshot()
 		})
 
 	srv.Tool("discover_form").
 		Description("Discover form fields with their labels, types, and CSS selectors.").
 		Handler(func(ctx context.Context, input DiscoverFormInput) (*agent.FormDiscoveryResult, error) {
-			return session.DiscoverForm(input.Selector)
+			return s().DiscoverForm(input.Selector)
 		})
 
 	// --- Gated tools ---
@@ -363,7 +428,7 @@ see only what changed. Use 'annotated_screenshot' for visual element identificat
 		srv.Tool("eval").
 			Description("Execute JavaScript on the page. WARNING: arbitrary code execution.").
 			Handler(func(ctx context.Context, input EvalInput) (any, error) {
-				return session.Eval(input.Expression)
+				return s().Eval(input.Expression)
 			})
 	}
 

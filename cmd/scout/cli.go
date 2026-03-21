@@ -64,7 +64,8 @@ func parseFlags(args []string) cliFlags {
 
 // runOnePage creates a session, navigates to the URL, runs the action, and cleans up.
 func runOnePage(url string, flags cliFlags, fn func(s *cliSession)) {
-	headless := flags.getBool("headless", true)
+	// CLI defaults to visible browser; use --headless for scripts/CI
+	headless := flags.getBool("headless", false)
 	timeout := flags.getDuration("timeout", 30*time.Second)
 
 	session, err := agent.NewSession(agent.SessionConfig{
