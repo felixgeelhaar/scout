@@ -174,7 +174,7 @@ func (s *Session) Click(selector string) (*PageResult, error) {
 		return nil, err
 	}
 
-	nodeID, err := s.page.QuerySelector(selector)
+	nodeID, err := s.querySelector(selector)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func (s *Session) ClickAndWait(selector string) (*PageResult, error) {
 		return nil, err
 	}
 
-	nodeID, err := s.page.QuerySelector(selector)
+	nodeID, err := s.querySelector(selector)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func (s *Session) Type(selector, text string) (*ElementResult, error) {
 		return nil, err
 	}
 
-	nodeID, err := s.page.QuerySelector(selector)
+	nodeID, err := s.querySelector(selector)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func (s *Session) FillForm(fields map[string]string) (*FormResult, error) {
 	}
 
 	for selector, value := range fields {
-		nodeID, err := s.page.QuerySelector(selector)
+		nodeID, err := s.querySelector(selector)
 		if err != nil {
 			result.Fields = append(result.Fields, FieldResult{
 				Selector: selector,
@@ -302,7 +302,7 @@ func (s *Session) Extract(selector string) (*ElementResult, error) {
 		return nil, err
 	}
 
-	nodeID, err := s.page.QuerySelector(selector)
+	nodeID, err := s.querySelector(selector)
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +436,7 @@ func (s *Session) HasElement(selector string) bool {
 	if s.page == nil {
 		return false
 	}
-	_, err := s.page.QuerySelector(selector)
+	_, err := s.querySelector(selector)
 	return err == nil
 }
 
@@ -484,8 +484,24 @@ func (s *Session) PDF() ([]byte, error) {
 }
 
 // waitAndResolve waits for an element to appear before interacting.
+// Supports both CSS selectors and Playwright-style :text('...') selectors.
 func (s *Session) waitAndResolve(selector string) error {
-	return s.page.WaitForSelector(selector)
+	// Try CSS first
+	err := s.page.WaitForSelector(selector)
+	if err == nil {
+		return nil
+	}
+	// Try Playwright-style text selector as fallback
+	_, resolveErr := s.resolveSelector(selector)
+	if resolveErr == nil {
+		return nil
+	}
+	return err // return original CSS error
+}
+
+// querySelector resolves a selector to a nodeID, supporting Playwright-style syntax.
+func (s *Session) querySelector(selector string) (int64, error) {
+	return s.resolveSelector(selector)
 }
 
 func jsonQuote(s string) string {

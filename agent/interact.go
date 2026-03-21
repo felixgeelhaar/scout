@@ -20,7 +20,7 @@ func (s *Session) Hover(selector string) (*PageResult, error) {
 		return nil, err
 	}
 
-	nodeID, err := s.page.QuerySelector(selector)
+	nodeID, err := s.querySelector(selector)
 	if err != nil {
 		return nil, err
 	}

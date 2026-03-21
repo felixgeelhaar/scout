@@ -213,7 +213,12 @@ filling forms, extracting data, and taking screenshots. Start with 'navigate' to
 then use 'observe' to see interactive elements, and perform actions with 'click', 'type',
 'fill_form_semantic', 'extract', 'extract_table', etc. Use 'observe_diff' after actions to
 see only what changed. Use 'annotated_screenshot' for visual element identification.
-Use 'configure' to switch between headless and visible browser modes without restarting.`))
+Use 'configure' to switch between headless and visible browser modes without restarting.
+
+IMPORTANT: Scout uses standard CSS selectors, NOT Playwright selectors. Do NOT use :text(), :has-text(), >> chaining, or other Playwright-specific syntax. Instead:
+- To find by text content: use 'observe' or 'annotated_screenshot' to discover elements, then click by selector or label number
+- To find a button by text: use 'fill_form_semantic' for forms, or call 'annotated_screenshot' and use 'click_label' with the label number
+- Valid selectors: #id, .class, tag, [attr=value], tag:nth-of-type(n), tag:first-child, etc.`))
 
 	// s returns the current session, lazily creating it on first use.
 	// Every handler calls this instead of accessing session directly.
