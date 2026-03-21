@@ -108,6 +108,38 @@ type ConfigureInput struct {
 	Headless bool `json:"headless" jsonschema:"description=Run browser in headless mode (no visible window). Default true."`
 }
 
+type HoverInput struct {
+	Selector string `json:"selector" jsonschema:"required,description=CSS selector of element to hover over"`
+}
+
+type SelectOptionInput struct {
+	Selector string `json:"selector" jsonschema:"required,description=CSS selector of the select element"`
+	Option   string `json:"option" jsonschema:"required,description=Option text or value to select"`
+}
+
+type ScrollToInput struct {
+	Selector string `json:"selector" jsonschema:"required,description=CSS selector of element to scroll into view"`
+}
+
+type ScrollByInput struct {
+	X int `json:"x" jsonschema:"description=Horizontal scroll offset in pixels"`
+	Y int `json:"y" jsonschema:"required,description=Vertical scroll offset in pixels (positive=down)"`
+}
+
+type DragDropInput struct {
+	From string `json:"from" jsonschema:"required,description=CSS selector of element to drag"`
+	To   string `json:"to" jsonschema:"required,description=CSS selector of drop target"`
+}
+
+type FocusInput struct {
+	Selector string `json:"selector" jsonschema:"required,description=CSS selector of element to focus"`
+}
+
+type TabInput struct {
+	Name string `json:"name,omitempty" jsonschema:"description=Tab name (for open_tab and switch_tab)"`
+	URL  string `json:"url,omitempty" jsonschema:"description=URL to open in new tab"`
+}
+
 type ObserveDiffResult struct {
 	Observation *agent.Observation `json:"observation"`
 	Diff        *agent.DOMDiff     `json:"diff"`
@@ -191,6 +223,7 @@ Use 'configure' to switch between headless and visible browser modes without res
 	// --- Configuration ---
 
 	srv.Tool("configure").
+		ClosedWorld().Idempotent().
 		Description("Change browser settings without restarting. Use headless=false to see the browser window.").
 		Handler(func(ctx context.Context, input ConfigureInput) (string, error) {
 			if err := reconfigure(agent.SessionConfig{
@@ -208,18 +241,21 @@ Use 'configure' to switch between headless and visible browser modes without res
 	// --- Navigation & Observation ---
 
 	srv.Tool("navigate").
+		OpenWorld().
 		Description("Navigate to a URL. Returns page title and URL.").
 		Handler(func(ctx context.Context, input NavigateInput) (*agent.PageResult, error) {
 			return s().Navigate(input.URL)
 		})
 
 	srv.Tool("observe").
+		ReadOnly().
 		Description("Get a structured snapshot of the current page including all links, inputs, buttons, and visible text.").
 		Handler(func(ctx context.Context, input ObserveInput) (*agent.Observation, error) {
 			return s().Observe()
 		})
 
 	srv.Tool("observe_diff").
+		ReadOnly().
 		Description("Observe the page and return only what changed since the last observation. Much more token-efficient.").
 		Handler(func(ctx context.Context, input ObserveInput) (*ObserveDiffResult, error) {
 			obs, diff, err := s().ObserveDiff()
@@ -230,6 +266,7 @@ Use 'configure' to switch between headless and visible browser modes without res
 		})
 
 	srv.Tool("observe_with_budget").
+		ReadOnly().
 		Description("Observe the page constrained to an approximate token budget. Prioritizes interactive elements.").
 		Handler(func(ctx context.Context, input ObserveWithBudgetInput) (*agent.Observation, error) {
 			return s().ObserveWithBudget(input.Budget)
@@ -279,39 +316,93 @@ Use 'configure' to switch between headless and visible browser modes without res
 			return fmt.Sprintf("Dispatched %s on %s", input.EventType, input.Selector), nil
 		})
 
+	srv.Tool("hover").
+		Description("Hover over an element to trigger CSS :hover states, tooltips, and dropdown menus.").
+		Handler(func(ctx context.Context, input HoverInput) (*agent.PageResult, error) {
+			return s().Hover(input.Selector)
+		})
+
+	srv.Tool("double_click").
+		Description("Double-click an element.").
+		Handler(func(ctx context.Context, input ClickInput) (*agent.PageResult, error) {
+			return s().DoubleClick(input.Selector)
+		})
+
+	srv.Tool("right_click").
+		Description("Right-click an element to trigger context menus.").
+		Handler(func(ctx context.Context, input ClickInput) (*agent.PageResult, error) {
+			return s().RightClick(input.Selector)
+		})
+
+	srv.Tool("select_option").
+		Description("Select an option from a dropdown/select element by visible text or value.").
+		Handler(func(ctx context.Context, input SelectOptionInput) (*agent.ElementResult, error) {
+			return s().SelectOption(input.Selector, input.Option)
+		})
+
+	srv.Tool("scroll_to").
+		Description("Scroll to bring an element into view.").
+		Handler(func(ctx context.Context, input ScrollToInput) (*agent.PageResult, error) {
+			return s().ScrollTo(input.Selector)
+		})
+
+	srv.Tool("scroll_by").
+		Description("Scroll the page by pixel offset. Positive y = scroll down.").
+		Handler(func(ctx context.Context, input ScrollByInput) (*agent.PageResult, error) {
+			return s().ScrollBy(input.X, input.Y)
+		})
+
+	srv.Tool("focus").
+		Description("Set focus on an element, triggering :focus CSS state.").
+		Handler(func(ctx context.Context, input FocusInput) (*agent.PageResult, error) {
+			return s().Focus(input.Selector)
+		})
+
+	srv.Tool("drag_drop").
+		Description("Drag an element and drop it on another element.").
+		Handler(func(ctx context.Context, input DragDropInput) (*agent.PageResult, error) {
+			return s().DragDrop(input.From, input.To)
+		})
+
 	// --- Extraction ---
 
 	srv.Tool("extract").
+		ReadOnly().
 		Description("Extract text content from a single element.").
 		Handler(func(ctx context.Context, input ExtractInput) (*agent.ElementResult, error) {
 			return s().Extract(input.Selector)
 		})
 
 	srv.Tool("extract_all").
+		ReadOnly().
 		Description("Extract text from all elements matching a selector.").
 		Handler(func(ctx context.Context, input ExtractAllInput) (*agent.ExtractAllResult, error) {
 			return s().ExtractAll(input.Selector)
 		})
 
 	srv.Tool("extract_table").
+		ReadOnly().
 		Description("Extract structured data from an HTML table (headers + rows).").
 		Handler(func(ctx context.Context, input ExtractTableInput) (*agent.TableResult, error) {
 			return s().ExtractTable(input.Selector)
 		})
 
 	srv.Tool("markdown").
+		ReadOnly().
 		Description("Get a compact markdown representation of the page. Ideal for LLM processing.").
 		Handler(func(ctx context.Context, input ObserveInput) (string, error) {
 			return s().Markdown()
 		})
 
 	srv.Tool("readable_text").
+		ReadOnly().
 		Description("Extract just the main readable content, stripping navigation and boilerplate.").
 		Handler(func(ctx context.Context, input ObserveInput) (string, error) {
 			return s().ReadableText()
 		})
 
 	srv.Tool("accessibility_tree").
+		ReadOnly().
 		Description("Get a compact accessibility tree showing all interactive elements.").
 		Handler(func(ctx context.Context, input ObserveInput) (string, error) {
 			return s().AccessibilityTree()
@@ -320,6 +411,7 @@ Use 'configure' to switch between headless and visible browser modes without res
 	// --- Capture ---
 
 	srv.Tool("screenshot").
+		ReadOnly().
 		Description("Capture a PNG screenshot of the current page (auto-compressed to fit LLM contexts).").
 		Handler(func(ctx context.Context, input ScreenshotInput) (string, error) {
 			data, err := s().Screenshot()
@@ -330,6 +422,7 @@ Use 'configure' to switch between headless and visible browser modes without res
 		})
 
 	srv.Tool("annotated_screenshot").
+		ReadOnly().
 		Description("Screenshot with numbered labels on interactive elements. Use click_label to interact by number.").
 		Handler(func(ctx context.Context, input ObserveInput) (*AnnotatedScreenshotResult, error) {
 			result, err := s().AnnotatedScreenshot()
@@ -344,6 +437,7 @@ Use 'configure' to switch between headless and visible browser modes without res
 		})
 
 	srv.Tool("pdf").
+		ReadOnly().
 		Description("Generate a PDF of the current page.").
 		Handler(func(ctx context.Context, input PDFInput) (string, error) {
 			data, err := s().PDF()
@@ -356,6 +450,7 @@ Use 'configure' to switch between headless and visible browser modes without res
 	// --- Network ---
 
 	srv.Tool("enable_network_capture").
+		ClosedWorld().
 		Description("Start capturing network XHR/fetch responses. Patterns filter by URL substring.").
 		Handler(func(ctx context.Context, input EnableNetworkInput) (string, error) {
 			if err := s().EnableNetworkCapture(input.Patterns...); err != nil {
@@ -365,6 +460,7 @@ Use 'configure' to switch between headless and visible browser modes without res
 		})
 
 	srv.Tool("network_requests").
+		ReadOnly().
 		Description("Get captured network requests/responses. Call enable_network_capture first.").
 		Handler(func(ctx context.Context, input NetworkRequestsInput) ([]agent.NetworkCapture, error) {
 			return s().CapturedRequests(input.Pattern), nil
@@ -373,6 +469,7 @@ Use 'configure' to switch between headless and visible browser modes without res
 	// --- Framework support ---
 
 	srv.Tool("wait_spa").
+		ReadOnly().
 		Description("Wait for SPA framework (React/Vue/Angular/Next.js/Svelte) to finish rendering.").
 		Handler(func(ctx context.Context, input ObserveInput) (*agent.PageResult, error) {
 			if err := s().WaitForSPA(); err != nil {
@@ -382,18 +479,21 @@ Use 'configure' to switch between headless and visible browser modes without res
 		})
 
 	srv.Tool("detect_frameworks").
+		ReadOnly().
 		Description("Detect which frontend frameworks are active on the page.").
 		Handler(func(ctx context.Context, input ObserveInput) ([]string, error) {
 			return s().DetectedFrameworks()
 		})
 
 	srv.Tool("component_state").
+		ReadOnly().
 		Description("Extract component state/props from any framework (React, Vue, Svelte, Angular, Alpine, Lit).").
 		Handler(func(ctx context.Context, input ComponentStateInput) (map[string]any, error) {
 			return s().ComponentState(input.Selector)
 		})
 
 	srv.Tool("app_state").
+		ReadOnly().
 		Description("Extract global app state (Redux, Next.js, Nuxt, Remix, SvelteKit, Gatsby, Astro, Alpine, HTMX).").
 		Handler(func(ctx context.Context, input ObserveInput) (map[string]any, error) {
 			return s().GetAppState()
@@ -402,12 +502,14 @@ Use 'configure' to switch between headless and visible browser modes without res
 	// --- Utility ---
 
 	srv.Tool("has_element").
+		ReadOnly().
 		Description("Check if an element exists on the page.").
 		Handler(func(ctx context.Context, input HasElementInput) (bool, error) {
 			return s().HasElement(input.Selector), nil
 		})
 
 	srv.Tool("wait_for").
+		ReadOnly().
 		Description("Wait for an element to appear in the DOM.").
 		Handler(func(ctx context.Context, input WaitForInput) (*agent.PageResult, error) {
 			if err := s().WaitFor(input.Selector); err != nil {
@@ -417,6 +519,7 @@ Use 'configure' to switch between headless and visible browser modes without res
 		})
 
 	srv.Tool("discover_form").
+		ReadOnly().
 		Description("Discover form fields with their labels, types, and CSS selectors.").
 		Handler(func(ctx context.Context, input DiscoverFormInput) (*agent.FormDiscoveryResult, error) {
 			return s().DiscoverForm(input.Selector)
