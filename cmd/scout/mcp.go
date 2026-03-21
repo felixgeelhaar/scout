@@ -274,6 +274,10 @@ IMPORTANT: Scout uses standard CSS selectors, NOT Playwright selectors. Do NOT u
 			}
 			_ = progress.ReportWithMessage(2, &total, "Page loaded")
 			_ = progress.ReportWithMessage(3, &total, "Done")
+			// Notify client that available tools may have changed based on page content
+			if session := mcp.SessionFromContext(ctx); session != nil {
+				_ = session.NotifyToolListChanged()
+			}
 			return result, nil
 		})
 
