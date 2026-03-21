@@ -63,6 +63,7 @@ type Observation struct {
 type LinkInfo struct {
 	Text string `json:"text"`
 	Href string `json:"href"`
+	Cost string `json:"cost,omitempty"` // "high" (navigation), "medium" (ajax), "low" (anchor)
 }
 
 // InputInfo describes an input element.
@@ -79,16 +80,19 @@ type ButtonInfo struct {
 	Text string `json:"text"`
 	ID   string `json:"id,omitempty"`
 	Type string `json:"type,omitempty"`
+	Cost string `json:"cost,omitempty"` // "high" (submit/navigation), "medium" (action), "low" (toggle)
 }
 
 // --- DOM Diff types ---
 
 // DOMDiff represents changes between two Observe() calls.
 type DOMDiff struct {
-	Added    []DOMElement `json:"added,omitempty"`
-	Removed  []DOMElement `json:"removed,omitempty"`
-	Modified []DOMChange  `json:"modified,omitempty"`
-	HasDiff  bool         `json:"has_diff"`
+	Added          []DOMElement `json:"added,omitempty"`
+	Removed        []DOMElement `json:"removed,omitempty"`
+	Modified       []DOMChange  `json:"modified,omitempty"`
+	HasDiff        bool         `json:"has_diff"`
+	Classification string       `json:"classification,omitempty"` // navigation, content_loaded, modal_appeared, form_error, notification, loading_complete, element_state_changed, minor_update
+	Summary        string       `json:"summary,omitempty"`        // human-readable one-line summary
 }
 
 // DOMElement describes an element that was added or removed.

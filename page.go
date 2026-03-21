@@ -541,6 +541,66 @@ func (p *Page) QuerySelectorAll(selector string) ([]int64, error) {
 	return qResp.NodeIDs, nil
 }
 
+// QuerySelectorPiercing finds the first element matching the selector,
+// piercing through shadow DOM boundaries. Falls back to regular querySelector
+// if no shadow roots exist.
+func (p *Page) QuerySelectorPiercing(selector string) (int64, error) {
+	// Try regular querySelector first
+	nodeID, err := p.QuerySelector(selector)
+	if err == nil {
+		return nodeID, nil
+	}
+
+	// Fall back to JS-based shadow-piercing search
+	selectorJSON, _ := json.Marshal(selector)
+	js := fmt.Sprintf(`(function() {
+		function deepQuery(root, sel) {
+			const result = root.querySelector(sel);
+			if (result) return true;
+			const shadows = root.querySelectorAll('*');
+			for (const el of shadows) {
+				if (el.shadowRoot) {
+					const found = deepQuery(el.shadowRoot, sel);
+					if (found) return true;
+				}
+			}
+			return false;
+		}
+		if (deepQuery(document, %s)) {
+			// Mark it for retrieval
+			function deepFind(root, sel) {
+				const result = root.querySelector(sel);
+				if (result) { result.setAttribute('data-scout-shadow', 'true'); return true; }
+				for (const el of root.querySelectorAll('*')) {
+					if (el.shadowRoot && deepFind(el.shadowRoot, sel)) return true;
+				}
+				return false;
+			}
+			deepFind(document, %s);
+			return true;
+		}
+		return false;
+	})()`, selectorJSON, selectorJSON)
+
+	result, evalErr := p.Evaluate(js)
+	if evalErr != nil {
+		return 0, err // return original error
+	}
+	if b, ok := result.(bool); !ok || !b {
+		return 0, err
+	}
+
+	// The element was marked — find it via regular querySelector
+	nodeID, err2 := p.QuerySelector("[data-scout-shadow]")
+	if err2 != nil {
+		return 0, err
+	}
+
+	// Clean up marker
+	_, _ = p.Evaluate(`document.querySelector('[data-scout-shadow]')?.removeAttribute('data-scout-shadow')`)
+	return nodeID, nil
+}
+
 // ResolveNode resolves a DOM nodeId to a Runtime remote object ID.
 func (p *Page) ResolveNode(nodeID int64) (string, error) {
 	result, err := p.call("DOM.resolveNode", map[string]any{

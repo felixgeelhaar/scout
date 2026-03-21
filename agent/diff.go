@@ -3,6 +3,7 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // ObserveDiff returns the current page observation along with a structured diff
@@ -152,7 +153,83 @@ func (s *Session) harvestMutations() (*DOMDiff, error) {
 	}
 
 	diff.HasDiff = len(diff.Added) > 0 || len(diff.Removed) > 0 || len(diff.Modified) > 0
+	if diff.HasDiff {
+		diff.Classification, diff.Summary = classifyDiff(diff)
+	}
 	return diff, nil
+}
+
+// classifyDiff determines the semantic meaning of DOM changes.
+func classifyDiff(diff *DOMDiff) (classification, summary string) {
+	// Check for modal/dialog appearance
+	for _, el := range diff.Added {
+		tag := strings.ToLower(el.Tag)
+		classes := strings.ToLower(el.Classes)
+		text := strings.ToLower(el.Text)
+
+		if tag == "dialog" || strings.Contains(classes, "modal") || strings.Contains(classes, "dialog") ||
+			strings.Contains(classes, "overlay") || strings.Contains(classes, "popup") {
+			return "modal_appeared", fmt.Sprintf("Modal/dialog appeared: %s", truncate(el.Text, 80))
+		}
+
+		// Check for error messages
+		if strings.Contains(classes, "error") || strings.Contains(classes, "alert-danger") ||
+			strings.Contains(classes, "invalid") || strings.Contains(text, "error") ||
+			strings.Contains(text, "invalid") || strings.Contains(text, "failed") {
+			return "form_error", fmt.Sprintf("Error appeared: %s", truncate(el.Text, 80))
+		}
+
+		// Check for success messages
+		if strings.Contains(classes, "success") || strings.Contains(classes, "alert-success") ||
+			strings.Contains(text, "success") || strings.Contains(text, "saved") ||
+			strings.Contains(text, "created") || strings.Contains(text, "updated") {
+			return "notification", fmt.Sprintf("Success: %s", truncate(el.Text, 80))
+		}
+
+		// Check for toast/notification
+		if strings.Contains(classes, "toast") || strings.Contains(classes, "notification") ||
+			strings.Contains(classes, "snackbar") || strings.Contains(classes, "alert") {
+			return "notification", fmt.Sprintf("Notification: %s", truncate(el.Text, 80))
+		}
+	}
+
+	// Check for loading completion (spinner removed)
+	for _, el := range diff.Removed {
+		classes := strings.ToLower(el.Classes)
+		if strings.Contains(classes, "spinner") || strings.Contains(classes, "loading") ||
+			strings.Contains(classes, "skeleton") || strings.Contains(classes, "placeholder") {
+			return "loading_complete", "Loading indicator removed"
+		}
+	}
+
+	// Check for significant content changes
+	if len(diff.Added) > 5 {
+		return "content_loaded", fmt.Sprintf("%d elements added", len(diff.Added))
+	}
+
+	// Check for attribute state changes
+	for _, m := range diff.Modified {
+		if m.Attribute == "disabled" || m.Attribute == "aria-disabled" {
+			return "element_state_changed", fmt.Sprintf("Element %s %s state changed", m.Tag, m.Attribute)
+		}
+		if m.Attribute == "class" {
+			return "element_state_changed", fmt.Sprintf("Element %s class changed", m.Tag)
+		}
+	}
+
+	if len(diff.Added) > 0 || len(diff.Removed) > 0 {
+		return "minor_update", fmt.Sprintf("%d added, %d removed, %d modified",
+			len(diff.Added), len(diff.Removed), len(diff.Modified))
+	}
+
+	return "minor_update", fmt.Sprintf("%d modifications", len(diff.Modified))
+}
+
+func truncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "..."
 }
 
 func parseDOMElement(m map[string]any) DOMElement {

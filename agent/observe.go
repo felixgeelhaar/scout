@@ -1,6 +1,9 @@
 package agent
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Observe returns a structured snapshot of the page's current state,
 // including all interactive elements (links, inputs, buttons).
@@ -108,7 +111,8 @@ func (s *Session) observeInternal() (*Observation, error) {
 			if lm, ok := l.(map[string]any); ok {
 				text, _ := lm["text"].(string)
 				href, _ := lm["href"].(string)
-				obs.Links = append(obs.Links, LinkInfo{Text: text, Href: href})
+				cost := estimateLinkCost(href)
+				obs.Links = append(obs.Links, LinkInfo{Text: text, Href: href, Cost: cost})
 			}
 		}
 	}
@@ -136,10 +140,13 @@ func (s *Session) observeInternal() (*Observation, error) {
 				break
 			}
 			if bm, ok := btn.(map[string]any); ok {
+				btnType := strVal(bm, "type")
+				cost := estimateButtonCost(btnType, strVal(bm, "text"))
 				obs.Buttons = append(obs.Buttons, ButtonInfo{
 					Text: strVal(bm, "text"),
 					ID:   strVal(bm, "id"),
-					Type: strVal(bm, "type"),
+					Type: btnType,
+					Cost: cost,
 				})
 			}
 		}
@@ -160,4 +167,37 @@ func (s *Session) observeInternal() (*Observation, error) {
 func strVal(m map[string]any, key string) string {
 	v, _ := m[key].(string)
 	return v
+}
+
+// estimateLinkCost classifies the cost of clicking a link.
+func estimateLinkCost(href string) string {
+	if href == "" || href == "#" {
+		return "low" // in-page anchor or no-op
+	}
+	if strings.HasPrefix(href, "#") {
+		return "low" // anchor scroll
+	}
+	if strings.HasPrefix(href, "javascript:") {
+		return "medium" // JS action
+	}
+	return "high" // page navigation
+}
+
+// estimateButtonCost classifies the cost of clicking a button.
+func estimateButtonCost(btnType, text string) string {
+	textLower := strings.ToLower(text)
+	if btnType == "submit" {
+		return "high" // form submission, likely navigation
+	}
+	if strings.Contains(textLower, "submit") || strings.Contains(textLower, "sign") ||
+		strings.Contains(textLower, "login") || strings.Contains(textLower, "register") ||
+		strings.Contains(textLower, "create") || strings.Contains(textLower, "delete") ||
+		strings.Contains(textLower, "save") || strings.Contains(textLower, "checkout") {
+		return "high"
+	}
+	if strings.Contains(textLower, "next") || strings.Contains(textLower, "continue") ||
+		strings.Contains(textLower, "load more") || strings.Contains(textLower, "search") {
+		return "medium"
+	}
+	return "low" // toggle, close, expand, etc.
 }
