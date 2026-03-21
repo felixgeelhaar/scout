@@ -1,0 +1,87 @@
+ai:
+    enabled: false
+    provider: openai
+    model: gpt-4
+    apikey: ""
+    baseurl: ""
+    apiversion: ""
+    tone: professional
+    audience: developers
+    includeemoji: false
+    maxtokens: 2048
+    temperature: 0.7
+    timeout: 30s
+    retryattempts: 3
+    customprompts:
+        changelogsystem: ""
+        changeloguser: ""
+        releasenotessystem: ""
+        releasenotesuser: ""
+        marketingsystem: ""
+        marketinguser: ""
+changelog:
+    file: CHANGELOG.md
+    format: keep-a-changelog
+    productname: ""
+    groupby: type
+    template: ""
+    includecommithash: true
+    includeauthor: false
+    includedate: true
+    linkcommits: false
+    linkissues: false
+    repositoryurl: ""
+    issueurl: ""
+    exclude:
+        - chore
+        - ci
+        - docs
+        - style
+        - test
+    categories:
+        build: Build System
+        feat: Features
+        fix: Bug Fixes
+        perf: Performance Improvements
+        refactor: Code Refactoring
+        revert: Reverts
+output:
+    format: text
+    color: true
+    verbose: false
+    quiet: false
+    logfile: ""
+    loglevel: info
+    pluginauditlog: ""
+plugins:
+    - name: github
+      enabled: true
+      path: ""
+      config:
+        draft: false
+      hooks: []
+      timeout: 0s
+      continueonerror: false
+      capabilities: null
+versioning:
+    strategy: conventional
+    tagprefix: v
+    gittag: true
+    gitpush: true
+    gitsign: false
+    prereleasesuffix: ""
+    buildmetadata: ""
+    bumpfrom: tag
+    versionfile: ""
+workflow:
+    requireapproval: true
+    allowedbranches:
+        - main
+        - master
+    requirecleanworkingtree: true
+    requireuptodate: false
+    dryrunbydefault: false
+    autocommitchangelog: true
+    changelogcommitmessage: 'chore(release): update changelog for ${version}'
+    prereleasehook: ""
+    postreleasehook: ""
