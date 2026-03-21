@@ -244,7 +244,16 @@ Use 'configure' to switch between headless and visible browser modes without res
 		OpenWorld().
 		Description("Navigate to a URL. Returns page title and URL.").
 		Handler(func(ctx context.Context, input NavigateInput) (*agent.PageResult, error) {
-			return s().Navigate(input.URL)
+			progress := mcp.ProgressFromContext(ctx)
+			total := 3.0
+			_ = progress.ReportWithMessage(1, &total, "Launching browser...")
+			result, err := s().Navigate(input.URL)
+			if err != nil {
+				return nil, err
+			}
+			_ = progress.ReportWithMessage(2, &total, "Page loaded")
+			_ = progress.ReportWithMessage(3, &total, "Done")
+			return result, nil
 		})
 
 	srv.Tool("observe").
