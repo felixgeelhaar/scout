@@ -139,6 +139,18 @@ type FocusInput struct {
 	Selector string `json:"selector" jsonschema:"required,description=CSS selector of element to focus"`
 }
 
+type StartRecordInput struct {
+	Name string `json:"name" jsonschema:"required,description=Name for the playbook being recorded"`
+}
+
+type SavePlaybookInput struct {
+	Path string `json:"path" jsonschema:"required,description=File path to save the playbook JSON"`
+}
+
+type ReplayInput struct {
+	Path string `json:"path" jsonschema:"required,description=File path to the playbook JSON file"`
+}
+
 type TabInput struct {
 	Name string `json:"name,omitempty" jsonschema:"description=Tab name (for open_tab and switch_tab)"`
 	URL  string `json:"url,omitempty" jsonschema:"description=URL to open in new tab"`
@@ -577,6 +589,48 @@ IMPORTANT: Scout uses standard CSS selectors, NOT Playwright selectors. Do NOT u
 		Description("List all open tabs with their names, URLs, and titles.").
 		Handler(func(ctx context.Context, input ObserveInput) ([]agent.TabInfo, error) {
 			return s().ListTabs()
+		})
+
+	// --- Playbook ---
+
+	srv.Tool("start_recording").
+		ClosedWorld().
+		Description("Start recording browser actions into a replayable playbook. Call stop_recording when done.").
+		Handler(func(ctx context.Context, input StartRecordInput) (string, error) {
+			s().StartRecordingPlaybook(input.Name)
+			return fmt.Sprintf("Recording started: %s", input.Name), nil
+		})
+
+	srv.Tool("stop_recording").
+		ClosedWorld().
+		Description("Stop recording and return the playbook. Save it with save_playbook for later replay.").
+		Handler(func(ctx context.Context, input ObserveInput) (*agent.Playbook, error) {
+			return s().StopRecordingPlaybook()
+		})
+
+	srv.Tool("save_playbook").
+		ClosedWorld().
+		Description("Save the last recorded playbook to a JSON file for deterministic replay.").
+		Handler(func(ctx context.Context, input SavePlaybookInput) (string, error) {
+			pb, err := s().StopRecordingPlaybook()
+			if err != nil {
+				return "", err
+			}
+			if err := agent.SavePlaybook(pb, input.Path); err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("Playbook saved to %s (%d actions)", input.Path, len(pb.Actions)), nil
+		})
+
+	srv.Tool("replay_playbook").
+		OpenWorld().
+		Description("Replay a saved playbook deterministically without LLM calls. Returns success/failure and any extracted data.").
+		Handler(func(ctx context.Context, input ReplayInput) (*agent.PlaybookResult, error) {
+			pb, err := agent.LoadPlaybook(input.Path)
+			if err != nil {
+				return nil, err
+			}
+			return s().ReplayPlaybook(pb)
 		})
 
 	// --- Gated tools ---

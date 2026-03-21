@@ -31,6 +31,7 @@ type Session struct {
 	diffInstalled bool
 	closed        bool
 	tabs          *tabManager
+	recording     *recording
 }
 
 // SessionConfig configures a new Session.
@@ -138,6 +139,7 @@ func (s *Session) Navigate(url string) (*PageResult, error) {
 		return nil, err
 	}
 
+	s.recordAction(Action{Type: "navigate", Value: url})
 	return s.pageResult()
 }
 
@@ -186,6 +188,7 @@ func (s *Session) Click(selector string) (*PageResult, error) {
 	// Wait for any resulting navigation or DOM update
 	_ = s.page.WaitStable(300 * time.Millisecond)
 
+	s.recordAction(Action{Type: "click", Selector: selector})
 	return s.pageResult()
 }
 
@@ -235,6 +238,7 @@ func (s *Session) Type(selector, text string) (*ElementResult, error) {
 	}
 
 	val, _ := sel.Value()
+	s.recordAction(Action{Type: "type", Selector: selector, Value: text})
 	return &ElementResult{
 		Selector: selector,
 		Value:    val,
