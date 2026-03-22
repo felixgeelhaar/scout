@@ -125,19 +125,21 @@ func (s *Session) ensurePage() error {
 func (s *Session) Navigate(url string) (*PageResult, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	// Create a fresh page for each navigation
+	// Close existing page and create new one directly at target URL (skips about:blank)
 	if s.page != nil {
 		_ = s.page.Close()
 	}
-	page, err := s.browser.NewPage()
+	page, err := s.browser.NewPageAt(url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create page: %w", err)
+		return nil, fmt.Errorf("failed to navigate to %s: %w", url, err)
 	}
 	s.page = page
-	s.diffInstalled = false // reset mutation observer on new page
+	s.diffInstalled = false
 
-	if err := page.Navigate(url); err != nil {
-		return nil, err
+	// Wait for page to fully load
+	if err := page.WaitLoad(); err != nil {
+		// Non-fatal — page may be interactive but not fully loaded
+		_ = err
 	}
 
 	s.recordAction(Action{Type: "navigate", Value: url})

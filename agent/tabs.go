@@ -55,15 +55,11 @@ func (s *Session) OpenTab(name, url string) (*PageResult, error) {
 		return nil, fmt.Errorf("tab %q already exists", name)
 	}
 
-	page, err := s.browser.NewPage()
+	page, err := s.browser.NewPageAt(url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create tab: %w", err)
+		return nil, fmt.Errorf("failed to open tab at %s: %w", url, err)
 	}
-
-	if err := page.Navigate(url); err != nil {
-		_ = page.Close()
-		return nil, err
-	}
+	_ = page.WaitLoad()
 
 	s.tabs.tabs[name] = &tabEntry{name: name, page: page}
 	s.tabs.active = name
