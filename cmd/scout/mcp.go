@@ -589,6 +589,62 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 			return s().SessionHistory(count), nil
 		})
 
+	// --- Smart extraction ---
+
+	srv.Tool("auto_extract").
+		ReadOnly().
+		Description("Auto-detect repeating patterns (product cards, search results, list items) and extract structured data. No selectors needed.").
+		Handler(func(ctx context.Context, input ObserveInput) (*agent.ExtractedPattern, error) {
+			return s().AutoExtract()
+		})
+
+	srv.Tool("scroll_and_collect").
+		Description("Auto-scroll the page and collect items as they lazy-load. For infinite scroll pages.").
+		Handler(func(ctx context.Context, input struct {
+			Selector string `json:"selector" jsonschema:"required,description=CSS selector for the repeating items"`
+			MaxItems int    `json:"max_items,omitempty" jsonschema:"description=Maximum items to collect (default 100)"`
+		}) (*agent.ExtractAllResult, error) {
+			return s().ScrollAndCollect(input.Selector, input.MaxItems)
+		})
+
+	// --- Diagnostics ---
+
+	srv.Tool("console_errors").
+		ReadOnly().
+		Description("Get captured console.error and console.warn messages from the page. Helps debug broken pages.").
+		Handler(func(ctx context.Context, input ObserveInput) ([]agent.ConsoleMessage, error) {
+			return s().ConsoleErrors()
+		})
+
+	srv.Tool("detect_auth_wall").
+		ReadOnly().
+		Description("Check if the page is a login wall, paywall, or CAPTCHA. Returns type, confidence, and reason.").
+		Handler(func(ctx context.Context, input ObserveInput) (*agent.AuthWallResult, error) {
+			return s().DetectAuthWall()
+		})
+
+	srv.Tool("upload_file").
+		Description("Upload a file to a file input element.").
+		Handler(func(ctx context.Context, input struct {
+			Selector string `json:"selector" jsonschema:"required,description=CSS selector of the file input element"`
+			FilePath string `json:"file_path" jsonschema:"required,description=Local path to the file to upload"`
+		}) (string, error) {
+			if err := s().UploadFile(input.Selector, input.FilePath); err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("Uploaded %s to %s", input.FilePath, input.Selector), nil
+		})
+
+	srv.Tool("compare_tabs").
+		ReadOnly().
+		Description("Compare content between two named tabs. Returns what's different, what's only in one tab.").
+		Handler(func(ctx context.Context, input struct {
+			Tab1 string `json:"tab1" jsonschema:"required,description=Name of the first tab"`
+			Tab2 string `json:"tab2" jsonschema:"required,description=Name of the second tab"`
+		}) (*agent.PageDiff, error) {
+			return s().CompareTabs(input.Tab1, input.Tab2)
+		})
+
 	// --- Utility ---
 
 	srv.Tool("has_element").
