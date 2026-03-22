@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/felixgeelhaar/mcp-go"
 
@@ -210,11 +211,20 @@ func serveMCP() {
 		sessionMu.Lock()
 		defer sessionMu.Unlock()
 		if session != nil {
-			_ = session.Close()
+			// Close in goroutine with timeout — don't block if CDP calls are in flight
+			old := session
 			session = nil
+			go func() {
+				done := make(chan struct{})
+				go func() { _ = old.Close(); close(done) }()
+				select {
+				case <-done:
+				case <-time.After(3 * time.Second):
+					// Force abandon — the browser process will be cleaned up by OS
+				}
+			}()
 		}
 		sessionCfg = cfg
-		// Next tool call will create a new session with updated config
 		return nil
 	}
 
