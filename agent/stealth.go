@@ -1,36 +1,28 @@
-package middleware
+package agent
 
 import (
 	browse "github.com/felixgeelhaar/scout"
+	"github.com/felixgeelhaar/scout/middleware"
 )
 
-// Stealth returns middleware that applies anti-detection patches to avoid bot fingerprinting.
-// It overrides common automation signals that websites use to detect headless Chrome:
-//   - navigator.webdriver = false
-//   - chrome.runtime injection
-//   - Permissions API normalization
-//   - Plugin/language spoofing
-//   - WebGL vendor/renderer masking
-//
-// Apply this middleware globally via engine.Use(middleware.Stealth()).
-func Stealth() browse.HandlerFunc {
-	return func(c *browse.Context) {
-		page := c.Page()
-		if page == nil {
-			c.Next()
-			return
-		}
+// applyStealthPatches injects anti-detection scripts into the page.
+// It registers the stealth JS via addScriptToEvaluateOnNewDocument for future
+// navigations and also evaluates it immediately for the current page context.
+// Must be called with the session mutex held.
+func (s *Session) applyStealthPatches(page *browse.Page) {
+	_, _ = page.Call("Page.addScriptToEvaluateOnNewDocument", map[string]any{
+		"source": stealthAgentJS,
+	})
+	_, _ = page.Evaluate(stealthAgentJS)
 
-		// Inject stealth patches before any page load
-		_, _ = page.Call("Page.addScriptToEvaluateOnNewDocument", map[string]any{
-			"source": stealthJS,
-		})
-
-		c.Next()
-	}
+	ua := middleware.RandomUserAgent()
+	_ = page.SetUserAgent(ua)
 }
 
-const stealthJS = `
+// stealthAgentJS is the same stealth script used by middleware.Stealth(),
+// duplicated here to avoid a circular dependency between agent and middleware.
+// This must stay in sync with the stealthJS constant in middleware/stealth.go.
+const stealthAgentJS = `
 // 1. Override navigator.webdriver
 Object.defineProperty(navigator, 'webdriver', {
 	get: () => false,

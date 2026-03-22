@@ -4,22 +4,32 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/felixgeelhaar/scout/internal/cdp"
 	"github.com/felixgeelhaar/scout/internal/wait"
 )
 
+// flatNode holds a subset of a DOM node from getFlattenedDocument.
+type flatNode struct {
+	NodeID     int64    `json:"nodeId"`
+	NodeType   int      `json:"nodeType"`
+	NodeName   string   `json:"nodeName"`
+	Attributes []string `json:"attributes,omitempty"`
+}
+
 // Page wraps a CDP session for a single browser tab.
 type Page struct {
-	conn         *cdp.Conn
-	ctx          context.Context
-	cancel       context.CancelFunc
-	targetID     string
-	sessionID    string
-	timeout      time.Duration
-	rootNodeID   int64 // cached DOM root node ID
-	urlValidator URLValidator
+	conn           *cdp.Conn
+	ctx            context.Context
+	cancel         context.CancelFunc
+	targetID       string
+	sessionID      string
+	timeout        time.Duration
+	rootNodeID     int64 // cached DOM root node ID
+	urlValidator   URLValidator
+	flattenedNodes []flatNode // cached flattened DOM (pierce: true)
 }
 
 // call sends a CDP command scoped to this page's session and context.
@@ -62,8 +72,9 @@ func (p *Page) Navigate(rawURL string) error {
 		return &NavigationError{URL: rawURL, Err: err}
 	}
 
-	// Invalidate cached root node ID on navigation
+	// Invalidate cached root node ID and flattened DOM on navigation
 	p.rootNodeID = 0
+	p.flattenedNodes = nil
 
 	params := map[string]string{"url": rawURL}
 	result, err := p.call("Page.navigate", params)
@@ -549,63 +560,109 @@ func (p *Page) QuerySelectorAll(selector string) ([]int64, error) {
 }
 
 // QuerySelectorPiercing finds the first element matching the selector,
-// piercing through shadow DOM boundaries. Falls back to regular querySelector
-// if no shadow roots exist.
+// piercing through shadow DOM boundaries. Uses DOM.getFlattenedDocument
+// with pierce:true for a single-call flattened DOM traversal, falling
+// back to JS-based search if the flattened approach finds no match.
 func (p *Page) QuerySelectorPiercing(selector string) (int64, error) {
-	// Try regular querySelector first
 	nodeID, err := p.QuerySelector(selector)
 	if err == nil {
 		return nodeID, nil
 	}
 
-	// Fall back to JS-based shadow-piercing search
+	nodes, flatErr := p.getFlattenedNodes()
+	if flatErr == nil {
+		if nid := matchFlatNode(nodes, selector); nid != 0 {
+			return nid, nil
+		}
+	}
+
 	selectorJSON, _ := json.Marshal(selector)
 	js := fmt.Sprintf(`(function() {
-		function deepQuery(root, sel) {
+		function deepFind(root, sel) {
 			const result = root.querySelector(sel);
-			if (result) return true;
-			const shadows = root.querySelectorAll('*');
-			for (const el of shadows) {
-				if (el.shadowRoot) {
-					const found = deepQuery(el.shadowRoot, sel);
-					if (found) return true;
-				}
+			if (result) { result.setAttribute('data-scout-shadow', 'true'); return true; }
+			for (const el of root.querySelectorAll('*')) {
+				if (el.shadowRoot && deepFind(el.shadowRoot, sel)) return true;
 			}
 			return false;
 		}
-		if (deepQuery(document, %s)) {
-			// Mark it for retrieval
-			function deepFind(root, sel) {
-				const result = root.querySelector(sel);
-				if (result) { result.setAttribute('data-scout-shadow', 'true'); return true; }
-				for (const el of root.querySelectorAll('*')) {
-					if (el.shadowRoot && deepFind(el.shadowRoot, sel)) return true;
-				}
-				return false;
-			}
-			deepFind(document, %s);
-			return true;
-		}
-		return false;
-	})()`, selectorJSON, selectorJSON)
+		return deepFind(document, %s);
+	})()`, selectorJSON)
 
 	result, evalErr := p.Evaluate(js)
 	if evalErr != nil {
-		return 0, err // return original error
+		return 0, err
 	}
 	if b, ok := result.(bool); !ok || !b {
 		return 0, err
 	}
 
-	// The element was marked — find it via regular querySelector
 	nodeID, err2 := p.QuerySelector("[data-scout-shadow]")
 	if err2 != nil {
 		return 0, err
 	}
 
-	// Clean up marker
 	_, _ = p.Evaluate(`document.querySelector('[data-scout-shadow]')?.removeAttribute('data-scout-shadow')`)
 	return nodeID, nil
+}
+
+// getFlattenedNodes returns a cached flattened DOM tree that pierces shadow roots.
+// The cache is invalidated when rootNodeID is reset (on navigation).
+func (p *Page) getFlattenedNodes() ([]flatNode, error) {
+	if p.flattenedNodes != nil {
+		return p.flattenedNodes, nil
+	}
+	result, err := p.call("DOM.getFlattenedDocument", map[string]any{
+		"depth":  -1,
+		"pierce": true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var resp struct {
+		Nodes []flatNode `json:"nodes"`
+	}
+	if err := json.Unmarshal(result, &resp); err != nil {
+		return nil, err
+	}
+	p.flattenedNodes = resp.Nodes
+	return p.flattenedNodes, nil
+}
+
+// matchFlatNode searches flattened nodes for a simple selector match.
+// Supports #id, .class, and tag selectors against the pierce:true node list.
+func matchFlatNode(nodes []flatNode, selector string) int64 {
+	for _, n := range nodes {
+		if n.NodeType != 1 {
+			continue
+		}
+		attrs := attrMap(n.Attributes)
+		if strings.HasPrefix(selector, "#") {
+			if attrs["id"] == selector[1:] {
+				return n.NodeID
+			}
+		} else if strings.HasPrefix(selector, ".") {
+			cls := selector[1:]
+			for _, c := range strings.Fields(attrs["class"]) {
+				if c == cls {
+					return n.NodeID
+				}
+			}
+		} else if !strings.ContainsAny(selector, "#.[]:>+~ ") {
+			if strings.EqualFold(n.NodeName, selector) {
+				return n.NodeID
+			}
+		}
+	}
+	return 0
+}
+
+func attrMap(attrs []string) map[string]string {
+	m := make(map[string]string, len(attrs)/2)
+	for i := 0; i+1 < len(attrs); i += 2 {
+		m[attrs[i]] = attrs[i+1]
+	}
+	return m
 }
 
 // ResolveNode resolves a DOM nodeId to a Runtime remote object ID.

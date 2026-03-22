@@ -22,17 +22,22 @@ import (
 // Session manages a stateful browser automation session for an agent.
 // All methods are goroutine-safe via an internal mutex.
 type Session struct {
-	mu            sync.Mutex
-	browser       browse.Browser
-	page          *browse.Page
-	timeout       time.Duration
-	contentOpts   ContentOptions
-	network       *networkState
-	diffInstalled bool
-	closed        bool
-	tabs          *tabManager
-	recording     *recording
-	history       []HistoryEntry
+	mu             sync.Mutex
+	browser        browse.Browser
+	page           *browse.Page
+	timeout        time.Duration
+	contentOpts    ContentOptions
+	network        *networkState
+	diffInstalled  bool
+	closed         bool
+	stealth        bool
+	tabs           *tabManager
+	recording      *recording
+	history        []HistoryEntry
+	tracing        bool
+	trace          *traceState
+	frameID        string
+	frameContextID int64
 }
 
 // SessionConfig configures a new Session.
@@ -43,6 +48,7 @@ type SessionConfig struct {
 	Viewport        [2]int // [width, height], zero means default
 	AllowPrivateIPs bool   // Allow navigation to private/loopback IPs
 	RemoteCDP       string // WebSocket URL for remote Chrome (skips local launch)
+	Stealth         bool   // Apply anti-detection stealth patches to every new page
 }
 
 // NewSession creates and launches a new browser session.
@@ -77,6 +83,7 @@ func NewSession(cfg SessionConfig) (*Session, error) {
 		browser:     engine,
 		timeout:     cfg.Timeout,
 		contentOpts: DefaultContentOptions(),
+		stealth:     cfg.Stealth,
 	}, nil
 }
 
@@ -90,6 +97,7 @@ func NewSessionFromBrowser(b browse.Browser, cfg SessionConfig) *Session {
 		browser:     b,
 		timeout:     cfg.Timeout,
 		contentOpts: DefaultContentOptions(),
+		stealth:     cfg.Stealth,
 	}
 }
 
@@ -117,6 +125,9 @@ func (s *Session) ensurePage() error {
 	if err != nil {
 		return fmt.Errorf("failed to create page: %w", err)
 	}
+	if s.stealth {
+		s.applyStealthPatches(page)
+	}
 	s.page = page
 	return nil
 }
@@ -125,16 +136,25 @@ func (s *Session) ensurePage() error {
 func (s *Session) Navigate(url string) (*PageResult, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	start, before := s.traceBeforeAction("navigate", "", "", url)
+
 	// Close existing page and create new one directly at target URL (skips about:blank)
 	if s.page != nil {
 		_ = s.page.Close()
 	}
 	page, err := s.browser.NewPageAt(url)
 	if err != nil {
+		s.traceAfterAction(start, before, "navigate", "", "", url, err)
 		return nil, fmt.Errorf("failed to navigate to %s: %w", url, err)
+	}
+	if s.stealth {
+		s.applyStealthPatches(page)
 	}
 	s.page = page
 	s.diffInstalled = false
+	s.frameID = ""
+	s.frameContextID = 0
 
 	// Wait for page to fully load
 	if err := page.WaitLoad(); err != nil {
@@ -142,6 +162,7 @@ func (s *Session) Navigate(url string) (*PageResult, error) {
 		_ = err
 	}
 
+	s.traceAfterAction(start, before, "navigate", "", "", url, nil)
 	s.recordAction(Action{Type: "navigate", Value: url})
 	s.addHistory("navigate", "", url, "")
 	return s.pageResult()
@@ -176,22 +197,28 @@ func (s *Session) Click(selector string) (*PageResult, error) {
 		return nil, err
 	}
 
+	start, before := s.traceBeforeAction("click", selector, "", "")
+
 	if err := s.waitAndResolve(selector); err != nil {
+		s.traceAfterAction(start, before, "click", selector, "", "", err)
 		return nil, err
 	}
 
 	nodeID, err := s.querySelector(selector)
 	if err != nil {
+		s.traceAfterAction(start, before, "click", selector, "", "", err)
 		return nil, err
 	}
 	sel := browse.NewSelection(s.page, nodeID, selector)
 	if err := sel.Click(); err != nil {
+		s.traceAfterAction(start, before, "click", selector, "", "", err)
 		return nil, err
 	}
 
 	// Wait for any resulting navigation or DOM update
 	_ = s.page.WaitStable(300 * time.Millisecond)
 
+	s.traceAfterAction(start, before, "click", selector, "", "", nil)
 	s.recordAction(Action{Type: "click", Selector: selector})
 	s.addHistory("click", selector, "", "")
 	return s.pageResult()
@@ -229,20 +256,26 @@ func (s *Session) Type(selector, text string) (*ElementResult, error) {
 		return nil, err
 	}
 
+	start, before := s.traceBeforeAction("type", selector, text, "")
+
 	if err := s.waitAndResolve(selector); err != nil {
+		s.traceAfterAction(start, before, "type", selector, text, "", err)
 		return nil, err
 	}
 
 	nodeID, err := s.querySelector(selector)
 	if err != nil {
+		s.traceAfterAction(start, before, "type", selector, text, "", err)
 		return nil, err
 	}
 	sel := browse.NewSelection(s.page, nodeID, selector)
 	if err := sel.Input(text); err != nil {
+		s.traceAfterAction(start, before, "type", selector, text, "", err)
 		return nil, err
 	}
 
 	val, _ := sel.Value()
+	s.traceAfterAction(start, before, "type", selector, text, "", nil)
 	s.recordAction(Action{Type: "type", Selector: selector, Value: text})
 	s.addHistory("type", selector, "", text)
 	return &ElementResult{

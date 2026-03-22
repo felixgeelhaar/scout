@@ -40,6 +40,17 @@ func (s *Session) resolveSelector(selector string) (int64, error) {
 		return s.findByText(tag, text)
 	}
 
+	// Try natural language selection for prompts that don't look like CSS selectors
+	if looksLikeNaturalLanguage(selector) {
+		nlResult, nlErr := s.selectByPromptInternal(selector)
+		if nlErr == nil && nlResult.Confidence >= 0.4 {
+			nodeID, resolveErr := s.page.QuerySelector(nlResult.Selector)
+			if resolveErr == nil {
+				return nodeID, nil
+			}
+		}
+	}
+
 	// Element not found — try to provide helpful suggestions
 	suggestions, sugErr := s.suggestSelectorsInternal(selector)
 	if sugErr == nil && len(suggestions) > 0 {

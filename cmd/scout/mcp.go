@@ -172,6 +172,38 @@ type SuggestInput struct {
 	Selector string `json:"selector" jsonschema:"required,description=The selector that failed to match"`
 }
 
+type SelectByPromptInput struct {
+	Prompt string `json:"prompt" jsonschema:"required,description=Natural language description of the element to find (e.g. 'the login button' or 'search input')"`
+}
+
+type SwitchToFrameInput struct {
+	Selector string `json:"selector" jsonschema:"required,description=CSS selector of the iframe element to switch into"`
+}
+
+type StopTraceInput struct {
+	Path string `json:"path" jsonschema:"required,description=File path to write the trace zip file"`
+}
+
+type HybridObserveInput struct {
+	IncludeImage bool `json:"include_image,omitempty" jsonschema:"description=Include base64 screenshot in response. Default false to keep responses compact."`
+}
+
+type HybridObserveResult struct {
+	Image    string                `json:"image,omitempty"`
+	Elements []agent.HybridElement `json:"elements"`
+	Width    int                   `json:"viewport_width"`
+	Height   int                   `json:"viewport_height"`
+}
+
+type FindByCoordinatesInput struct {
+	X int `json:"x" jsonschema:"required,description=X pixel coordinate in the viewport"`
+	Y int `json:"y" jsonschema:"required,description=Y pixel coordinate in the viewport"`
+}
+
+type BatchInput struct {
+	Actions []agent.BatchAction `json:"actions" jsonschema:"required,description=Array of actions to execute. Each has action (click/type/fill_form_semantic/wait/scroll_to) plus selector/value/fields as needed."`
+}
+
 type ObserveDiffResult struct {
 	Observation *agent.Observation `json:"observation"`
 	Diff        *agent.DOMDiff     `json:"diff"`
@@ -451,6 +483,14 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 			return s().DragDrop(input.From, input.To)
 		})
 
+	// --- Batch ---
+
+	srv.Tool("batch").
+		Description("Execute multiple actions in a single call. Avoids repeated round-trips. Actions: click, type, fill_form_semantic, wait, scroll_to. Continues on error.").
+		Handler(func(ctx context.Context, input BatchInput) (*agent.BatchResult, error) {
+			return s().ExecuteBatch(input.Actions)
+		})
+
 	// --- Extraction ---
 
 	srv.Tool("extract").
@@ -561,7 +601,7 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 
 	srv.Tool("network_requests").
 		ReadOnly().
-		Description("Get captured network requests/responses. Call enable_network_capture first.").
+		Description("Get captured network requests/responses including request bodies (POST/PUT/PATCH) and response bodies (max 32KB each, truncated if larger). Call enable_network_capture first.").
 		Handler(func(ctx context.Context, input NetworkRequestsInput) ([]agent.NetworkCapture, error) {
 			return s().CapturedRequests(input.Pattern), nil
 		})
@@ -623,11 +663,51 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 			return s().CheckReadiness()
 		})
 
+	srv.Tool("web_vitals").
+		ReadOnly().
+		Description("Extract Core Web Vitals (LCP, CLS, INP) and performance timing (TTFB, First Paint, DOM Content Loaded). Each metric is rated good/needs-improvement/poor per Google thresholds.").
+		Handler(func(ctx context.Context, input ObserveInput) (*agent.WebVitalsResult, error) {
+			return s().WebVitals()
+		})
+
+	srv.Tool("select_by_prompt").
+		ReadOnly().
+		Description("Find an element using natural language (e.g. 'the login button', 'search input'). Returns the best match with confidence score and CSS selector.").
+		Handler(func(ctx context.Context, input SelectByPromptInput) (*agent.PromptSelectResult, error) {
+			return s().SelectByPrompt(input.Prompt)
+		})
+
 	srv.Tool("suggest_selectors").
 		ReadOnly().
 		Description("Find elements similar to a selector that failed. Returns up to 5 suggestions with selector, tag, text, and classes.").
 		Handler(func(ctx context.Context, input SuggestInput) ([]agent.SelectorSuggestion, error) {
 			return s().SuggestSelectors(input.Selector)
+		})
+
+	srv.Tool("hybrid_observe").
+		ReadOnly().
+		Description("Vision+DOM hybrid mode: returns a clean screenshot (no labels) plus bounding boxes for all interactive elements. Use find_by_coordinates to select elements by pixel position. Set include_image=true to get the base64 screenshot.").
+		Handler(func(ctx context.Context, input HybridObserveInput) (*HybridObserveResult, error) {
+			result, err := s().HybridObserve()
+			if err != nil {
+				return nil, err
+			}
+			out := &HybridObserveResult{
+				Elements: result.Elements,
+				Width:    result.Width,
+				Height:   result.Height,
+			}
+			if input.IncludeImage {
+				out.Image = "data:image/png;base64," + base64.StdEncoding.EncodeToString(result.Screenshot)
+			}
+			return out, nil
+		})
+
+	srv.Tool("find_by_coordinates").
+		ReadOnly().
+		Description("Find the interactive element at given pixel coordinates. Returns the smallest element containing that point, with CSS selector and text. Use after hybrid_observe.").
+		Handler(func(ctx context.Context, input FindByCoordinatesInput) (*agent.PromptSelectResult, error) {
+			return s().FindByCoordinates(input.X, input.Y)
 		})
 
 	srv.Tool("session_history").
@@ -756,6 +836,22 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 			return s().ListTabs()
 		})
 
+	// --- Frames ---
+
+	srv.Tool("switch_to_frame").
+		ClosedWorld().
+		Description("Switch execution context into an iframe. Subsequent actions operate inside the iframe until switch_to_main_frame is called.").
+		Handler(func(ctx context.Context, input SwitchToFrameInput) (*agent.PageResult, error) {
+			return s().SwitchToFrame(input.Selector)
+		})
+
+	srv.Tool("switch_to_main_frame").
+		ClosedWorld().
+		Description("Switch back to the main page frame after operating inside an iframe.").
+		Handler(func(ctx context.Context, input ObserveInput) (*agent.PageResult, error) {
+			return s().SwitchToMainFrame()
+		})
+
 	// --- Playbook ---
 
 	srv.Tool("start_recording").
@@ -796,6 +892,25 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 				return nil, err
 			}
 			return s().ReplayPlaybook(pb)
+		})
+
+	// --- Tracing ---
+
+	srv.Tool("start_trace").
+		ClosedWorld().
+		Description("Start tracing all browser actions with before/after screenshots. Call stop_trace to export a zip file.").
+		Handler(func(ctx context.Context, input ObserveInput) (string, error) {
+			if err := s().StartTrace(); err != nil {
+				return "", err
+			}
+			return "Trace started. Actions will be recorded with screenshots.", nil
+		})
+
+	srv.Tool("stop_trace").
+		ClosedWorld().
+		Description("Stop tracing and export a zip file containing trace events, screenshots, and network requests.").
+		Handler(func(ctx context.Context, input StopTraceInput) (*agent.TraceResult, error) {
+			return s().StopTrace(input.Path)
 		})
 
 	// --- Gated tools ---

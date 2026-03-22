@@ -6,6 +6,8 @@ import (
 	"sync"
 )
 
+const defaultMaxBodySize = 32 * 1024 // 32KB
+
 // networkState tracks captured network requests for a session.
 type networkState struct {
 	mu       sync.Mutex
@@ -141,6 +143,15 @@ func (s *Session) onRequestWillBeSent(params map[string]any) {
 		RequestHeaders: headers,
 	}
 
+	if postData, ok := req["postData"].(string); ok && postData != "" {
+		if len(postData) > defaultMaxBodySize {
+			capture.RequestBody = postData[:defaultMaxBodySize]
+			capture.RequestBodyTruncated = true
+		} else {
+			capture.RequestBody = postData
+		}
+	}
+
 	s.network.mu.Lock()
 	s.network.pending[reqID] = capture
 	s.network.mu.Unlock()
@@ -179,12 +190,6 @@ func (s *Session) onLoadingFinished(params map[string]any) {
 	delete(s.network.pending, reqID)
 	s.network.mu.Unlock()
 
-	// Fetch response body (best-effort)
-	maxBody := s.contentOpts.MaxLength
-	if maxBody == 0 {
-		maxBody = 4000
-	}
-
 	if s.page != nil {
 		result, err := s.page.Call("Network.getResponseBody", map[string]any{
 			"requestId": reqID,
@@ -195,9 +200,9 @@ func (s *Session) onLoadingFinished(params map[string]any) {
 				Base64Encoded bool   `json:"base64Encoded"`
 			}
 			if err := json.Unmarshal(result, &body); err == nil && !body.Base64Encoded {
-				if len(body.Body) > maxBody {
-					capture.ResponseBody = body.Body[:maxBody]
-					capture.Truncated = true
+				if len(body.Body) > defaultMaxBodySize {
+					capture.ResponseBody = body.Body[:defaultMaxBodySize]
+					capture.ResponseBodyTruncated = true
 				} else {
 					capture.ResponseBody = body.Body
 				}
