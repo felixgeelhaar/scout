@@ -40,8 +40,62 @@ func (s *Session) resolveSelector(selector string) (int64, error) {
 		return s.findByText(tag, text)
 	}
 
-	// Return original error
+	// Element not found — try to provide helpful suggestions
+	suggestions, sugErr := s.suggestSelectorsInternal(selector)
+	if sugErr == nil && len(suggestions) > 0 {
+		hint := fmt.Sprintf("element %q not found. Did you mean:", selector)
+		for i, sg := range suggestions {
+			if i >= 3 {
+				break
+			}
+			hint += fmt.Sprintf(" %s (%s, %q)", sg.Selector, sg.Tag, sg.Text)
+			if i < 2 && i < len(suggestions)-1 {
+				hint += ","
+			}
+		}
+		return 0, fmt.Errorf("agent: %s", hint)
+	}
+
 	return 0, err
+}
+
+// suggestSelectorsInternal is the non-locking version of SuggestSelectors.
+func (s *Session) suggestSelectorsInternal(failedSelector string) ([]SelectorSuggestion, error) {
+	selectorJSON, _ := json.Marshal(failedSelector)
+	js := fmt.Sprintf(`(function() {
+		const failed = %s;
+		const suggestions = [];
+		const idMatch = failed.match(/#([\w-]+)/);
+		const classMatch = failed.match(/\.([\w-]+)/);
+		const tagMatch = failed.match(/^(\w+)/);
+		const textMatch = failed.match(/:text\(['"](.+?)['"]\)/);
+		const terms = [];
+		if (idMatch) terms.push(idMatch[1]);
+		if (classMatch) terms.push(classMatch[1]);
+		if (textMatch) terms.push(textMatch[1]);
+		if (tagMatch && tagMatch[1] !== '*') terms.push(tagMatch[1]);
+		for (const el of document.querySelectorAll('a,button,input,textarea,select,[role=button],h1,h2,h3,label')) {
+			if (suggestions.length >= 3) break;
+			const id = el.id||''; const cls = el.className||''; const text = el.textContent.trim().slice(0,60); const tag = el.tagName.toLowerCase();
+			for (const t of terms) {
+				const tl = t.toLowerCase();
+				if ((id+cls+text+tag).toLowerCase().includes(tl) && el.offsetParent !== null) {
+					suggestions.push({selector: id ? '#'+id : (el.name ? tag+'[name="'+el.name+'"]' : tag), tag, text, id, classes: typeof cls === 'string' ? cls.split(' ').slice(0,2).join(' ') : ''});
+					break;
+				}
+			}
+		}
+		return JSON.stringify(suggestions);
+	})()`, selectorJSON)
+
+	result, err := s.page.Evaluate(js)
+	if err != nil {
+		return nil, err
+	}
+	str, _ := result.(string)
+	var suggestions []SelectorSuggestion
+	_ = json.Unmarshal([]byte(str), &suggestions)
+	return suggestions, nil
 }
 
 // findByText finds an element by tag and text content via JS.

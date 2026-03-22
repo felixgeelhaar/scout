@@ -32,6 +32,7 @@ type Session struct {
 	closed        bool
 	tabs          *tabManager
 	recording     *recording
+	history       []HistoryEntry
 }
 
 // SessionConfig configures a new Session.
@@ -140,6 +141,7 @@ func (s *Session) Navigate(url string) (*PageResult, error) {
 	}
 
 	s.recordAction(Action{Type: "navigate", Value: url})
+	s.addHistory("navigate", "", url, "")
 	return s.pageResult()
 }
 
@@ -189,6 +191,7 @@ func (s *Session) Click(selector string) (*PageResult, error) {
 	_ = s.page.WaitStable(300 * time.Millisecond)
 
 	s.recordAction(Action{Type: "click", Selector: selector})
+	s.addHistory("click", selector, "", "")
 	return s.pageResult()
 }
 
@@ -239,6 +242,7 @@ func (s *Session) Type(selector, text string) (*ElementResult, error) {
 
 	val, _ := sel.Value()
 	s.recordAction(Action{Type: "type", Selector: selector, Value: text})
+	s.addHistory("type", selector, "", text)
 	return &ElementResult{
 		Selector: selector,
 		Value:    val,

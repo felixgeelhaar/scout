@@ -149,6 +149,21 @@ func main() {
 			}
 		})
 
+	case "watch":
+		requireArgs(args, 1, "scout watch <url> [--interval=5s]")
+		runWatch(args[1], parseFlags(args[2:]))
+
+	case "pipe":
+		if len(args) < 2 {
+			fmt.Fprintln(os.Stderr, "Usage: echo urls | scout pipe <command> [selector]")
+			os.Exit(1)
+		}
+		runPipe(args[1:], parseFlags(args[2:]))
+
+	case "record":
+		requireArgs(args, 1, "scout record <url> [--output=playbook.json]")
+		runRecord(args[1], parseFlags(args[2:]))
+
 	case "version", "--version", "-v":
 		fmt.Printf("scout %s (%s)\n", version, commit)
 
@@ -178,6 +193,9 @@ Commands:
   eval <url> <expression>           Evaluate JavaScript on page
   form discover <url> [selector]    Discover form fields with labels
   frameworks <url>                  Detect frontend frameworks on page
+  watch <url> [--interval=5s]       Live-watch page changes (Ctrl+C to stop)
+  pipe <command> [selector]         Process URLs from stdin (one per line)
+  record <url> [--output=file]      Interactive recording → playbook JSON
   mcp serve                         Start the MCP server (stdio transport)
   version                           Print version information
 

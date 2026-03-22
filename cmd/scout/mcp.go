@@ -156,6 +156,14 @@ type TabInput struct {
 	URL  string `json:"url,omitempty" jsonschema:"description=URL to open in new tab"`
 }
 
+type HistoryInput struct {
+	Count int `json:"count,omitempty" jsonschema:"description=Number of recent actions to return (default 5, max 20)"`
+}
+
+type SuggestInput struct {
+	Selector string `json:"selector" jsonschema:"required,description=The selector that failed to match"`
+}
+
 type ObserveDiffResult struct {
 	Observation *agent.Observation `json:"observation"`
 	Diff        *agent.DOMDiff     `json:"diff"`
@@ -539,6 +547,39 @@ IMPORTANT: Scout uses standard CSS selectors, NOT Playwright selectors. Do NOT u
 		Description("Extract global app state (Redux, Next.js, Nuxt, Remix, SvelteKit, Gatsby, Astro, Alpine, HTMX).").
 		Handler(func(ctx context.Context, input ObserveInput) (map[string]any, error) {
 			return s().GetAppState()
+		})
+
+	// --- Smart helpers ---
+
+	srv.Tool("dismiss_cookies").
+		Description("Auto-dismiss cookie consent banners. Tries common selectors and text patterns (Accept, Agree, Got it, OK). Returns whether a banner was found and dismissed.").
+		Handler(func(ctx context.Context, input ObserveInput) (*agent.CookieDismissResult, error) {
+			return s().DismissCookieBanner()
+		})
+
+	srv.Tool("check_readiness").
+		ReadOnly().
+		Description("Check how ready the page is for interaction. Returns a 0-100 score, pending XHR count, skeleton/spinner presence, and suggestions for what to wait for.").
+		Handler(func(ctx context.Context, input ObserveInput) (*agent.PageReadiness, error) {
+			return s().CheckReadiness()
+		})
+
+	srv.Tool("suggest_selectors").
+		ReadOnly().
+		Description("Find elements similar to a selector that failed. Returns up to 5 suggestions with selector, tag, text, and classes.").
+		Handler(func(ctx context.Context, input SuggestInput) ([]agent.SelectorSuggestion, error) {
+			return s().SuggestSelectors(input.Selector)
+		})
+
+	srv.Tool("session_history").
+		ReadOnly().
+		Description("Get the last N actions performed in this session. Provides context about what has been done so far.").
+		Handler(func(ctx context.Context, input HistoryInput) ([]agent.HistoryEntry, error) {
+			count := input.Count
+			if count == 0 {
+				count = 5
+			}
+			return s().SessionHistory(count), nil
 		})
 
 	// --- Utility ---
