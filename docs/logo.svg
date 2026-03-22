@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Scout Logo — Observer Eye -->
+  <!-- Eye outer shape -->
+  <path d="M20 100 Q60 44 100 44 Q140 44 180 100 Q140 156 100 156 Q60 156 20 100 Z"
+        fill="none" stroke="#3b82f6" stroke-width="7" stroke-linejoin="round"/>
+  <!-- Iris circle -->
+  <circle cx="100" cy="100" r="28" fill="none" stroke="#3b82f6" stroke-width="6"/>
+  <!-- Pupil — hexagonal -->
+  <polygon points="100,82 115,91 115,109 100,118 85,109 85,91" fill="#3b82f6"/>
+  <!-- Cursor arrow -->
+  <polygon points="128,108 128,148 138,138 148,154 156,150 146,134 158,134" fill="#3b82f6"/>
+  <!-- Scan lines -->
+  <line x1="40" y1="88" x2="68" y2="88" stroke="#3b82f6" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+  <line x1="40" y1="100" x2="65" y2="100" stroke="#3b82f6" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+  <line x1="40" y1="112" x2="68" y2="112" stroke="#3b82f6" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+  <line x1="132" y1="88" x2="160" y2="88" stroke="#3b82f6" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+  <line x1="135" y1="100" x2="160" y2="100" stroke="#3b82f6" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+</svg>
