@@ -67,10 +67,15 @@ func (e *Engine) MustLaunch() *Engine {
 	return e
 }
 
-// NewPage creates a new browser page/tab and returns it.
-// This is useful for direct page manipulation outside of the task system.
+// NewPage creates a new browser page/tab at about:blank.
 func (e *Engine) NewPage() (*Page, error) {
-	targetID, err := e.conn.CreateTarget("about:blank")
+	return e.NewPageAt("about:blank")
+}
+
+// NewPageAt creates a new browser page/tab and navigates directly to the URL.
+// Faster than NewPage + Navigate because Chrome loads the URL during target creation.
+func (e *Engine) NewPageAt(url string) (*Page, error) {
+	targetID, err := e.conn.CreateTarget(url)
 	if err != nil {
 		return nil, fmt.Errorf("browse: failed to create page: %w", err)
 	}

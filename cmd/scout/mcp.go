@@ -31,7 +31,7 @@ type TypeInput struct {
 }
 
 type FillFormInput struct {
-	Fields map[string]string `json:"fields" jsonschema:"required,description=Map of CSS selector to value for each field"`
+	Fields map[string]string `json:"fields" jsonschema:"required,description=JSON object where keys are CSS selectors and values are text to type. Example: {\"#email\": \"user@test.com\", \"#password\": \"secret\"}"`
 }
 
 type ExtractInput struct {
@@ -73,7 +73,7 @@ type DiscoverFormInput struct {
 }
 
 type FillFormSemanticInput struct {
-	Fields map[string]string `json:"fields" jsonschema:"required,description=Map of human-readable field name to value"`
+	Fields map[string]string `json:"fields" jsonschema:"required,description=JSON object where keys are human-readable field names and values are text to type. Example: {\"Email\": \"user@test.com\", \"Password\": \"secret\"}"`
 }
 
 type EnableNetworkInput struct {
@@ -238,7 +238,14 @@ Use 'configure' to switch between headless and visible browser modes without res
 IMPORTANT: Scout uses standard CSS selectors, NOT Playwright selectors. Do NOT use :text(), :has-text(), >> chaining, or other Playwright-specific syntax. Instead:
 - To find by text content: use 'observe' or 'annotated_screenshot' to discover elements, then click by selector or label number
 - To find a button by text: use 'fill_form_semantic' for forms, or call 'annotated_screenshot' and use 'click_label' with the label number
-- Valid selectors: #id, .class, tag, [attr=value], tag:nth-of-type(n), tag:first-child, etc.`))
+- Valid selectors: #id, .class, tag, [attr=value], tag:nth-of-type(n), tag:first-child, etc.
+
+IMPORTANT: fill_form and fill_form_semantic take a JSON OBJECT (not array) for fields:
+  fill_form: {"fields": {"#email": "value", "#password": "value"}}
+  fill_form_semantic: {"fields": {"Email": "value", "Password": "value"}}
+Do NOT send fields as an array of objects.
+
+WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navigate if a cookie banner appears. Use 'check_readiness' if the page seems to still be loading.`))
 
 	// s returns the current session, lazily creating it on first use.
 	// Every handler calls this instead of accessing session directly.

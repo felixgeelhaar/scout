@@ -21,6 +21,7 @@ package browse
 // rather than on *Engine directly, enabling testing without a real browser.
 type Browser interface {
 	NewPage() (*Page, error)
+	NewPageAt(url string) (*Page, error)
 	Close() error
 }
 
