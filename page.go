@@ -95,19 +95,26 @@ func (p *Page) WaitLoad() error {
 }
 
 // WaitStable waits until no DOM mutations occur for the given duration.
+// Has a hard timeout of max(d*3, 3s) to prevent hanging on SPAs with constant updates.
 func (p *Page) WaitStable(d time.Duration) error {
 	if d == 0 {
 		d = 500 * time.Millisecond
 	}
+	// Hard timeout: never wait longer than 3x the stability window or 3 seconds
+	hardTimeout := d * 3
+	if hardTimeout < 3*time.Second {
+		hardTimeout = 3 * time.Second
+	}
 	js := fmt.Sprintf(`new Promise(resolve => {
 		let timer;
+		const hard = setTimeout(() => { observer.disconnect(); resolve(true); }, %d);
 		const observer = new MutationObserver(() => {
 			clearTimeout(timer);
-			timer = setTimeout(() => { observer.disconnect(); resolve(true); }, %d);
+			timer = setTimeout(() => { clearTimeout(hard); observer.disconnect(); resolve(true); }, %d);
 		});
-		observer.observe(document.body, {childList: true, subtree: true, attributes: true});
-		timer = setTimeout(() => { observer.disconnect(); resolve(true); }, %d);
-	})`, d.Milliseconds(), d.Milliseconds())
+		observer.observe(document.body || document.documentElement, {childList: true, subtree: true, attributes: true});
+		timer = setTimeout(() => { clearTimeout(hard); observer.disconnect(); resolve(true); }, %d);
+	})`, hardTimeout.Milliseconds(), d.Milliseconds(), d.Milliseconds())
 	_, err := p.Evaluate(js)
 	return err
 }

@@ -46,7 +46,9 @@ type ExtractTableInput struct {
 	Selector string `json:"selector" jsonschema:"required,description=CSS selector for the table element"`
 }
 
-type ScreenshotInput struct{}
+type ScreenshotInput struct {
+	URL string `json:"url,omitempty" jsonschema:"description=Optional URL to navigate to before taking screenshot"`
+}
 
 type EvalInput struct {
 	Expression string `json:"expression" jsonschema:"required,description=JavaScript expression to evaluate"`
@@ -60,7 +62,9 @@ type WaitForInput struct {
 	Selector string `json:"selector" jsonschema:"required,description=CSS selector to wait for"`
 }
 
-type ObserveInput struct{}
+type ObserveInput struct {
+	URL string `json:"url,omitempty" jsonschema:"description=Optional URL to navigate to before observing"`
+}
 
 type ObserveWithBudgetInput struct {
 	Budget int `json:"budget" jsonschema:"required,description=Approximate token budget for the response"`
@@ -256,6 +260,15 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 		return session
 	}
 
+	// maybeNavigate navigates if a URL is provided, otherwise uses the current page.
+	maybeNavigate := func(url string) error {
+		if url != "" {
+			_, err := s().Navigate(url)
+			return err
+		}
+		return nil
+	}
+
 	// --- Configuration ---
 
 	srv.Tool("configure").
@@ -303,8 +316,11 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 	srv.Tool("observe").
 		ReadOnly().
 		OutputSchema(agent.Observation{}).
-		Description("Get a structured snapshot of the current page including all links, inputs, buttons, and visible text.").
+		Description("Get a structured snapshot of the current page. Optionally pass url to navigate first.").
 		Handler(func(ctx context.Context, input ObserveInput) (*agent.Observation, error) {
+			if err := maybeNavigate(input.URL); err != nil {
+				return nil, err
+			}
 			return s().Observe()
 		})
 
@@ -466,8 +482,11 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 
 	srv.Tool("screenshot").
 		ReadOnly().
-		Description("Capture a PNG screenshot of the current page (auto-compressed to fit LLM contexts).").
+		Description("Capture a PNG screenshot. Optionally pass url to navigate first. Auto-compressed for LLM contexts.").
 		Handler(func(ctx context.Context, input ScreenshotInput) (string, error) {
+			if err := maybeNavigate(input.URL); err != nil {
+				return "", err
+			}
 			data, err := s().Screenshot()
 			if err != nil {
 				return "", err
