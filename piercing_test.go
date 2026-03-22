@@ -124,3 +124,163 @@ func TestAttrMap_OddLength(t *testing.T) {
 		t.Error("attrMap should not include orphan key with no value pair")
 	}
 }
+
+func TestAttrMap_Empty(t *testing.T) {
+	m := attrMap(nil)
+	if len(m) != 0 {
+		t.Errorf("attrMap(nil) should be empty, got %d entries", len(m))
+	}
+
+	m2 := attrMap([]string{})
+	if len(m2) != 0 {
+		t.Errorf("attrMap([]) should be empty, got %d entries", len(m2))
+	}
+}
+
+func TestAttrMap_SinglePair(t *testing.T) {
+	m := attrMap([]string{"href", "https://example.com"})
+	if m["href"] != "https://example.com" {
+		t.Errorf("attrMap[href] = %q", m["href"])
+	}
+}
+
+func TestAttrMap_DuplicateKeys(t *testing.T) {
+	m := attrMap([]string{"class", "first", "class", "second"})
+	if m["class"] != "second" {
+		t.Errorf("duplicate key should use last value, got %q", m["class"])
+	}
+}
+
+func TestAttrMap_EmptyValues(t *testing.T) {
+	m := attrMap([]string{"disabled", "", "data-x", ""})
+	if m["disabled"] != "" {
+		t.Errorf("empty value should be empty string, got %q", m["disabled"])
+	}
+	if _, ok := m["disabled"]; !ok {
+		t.Error("key with empty value should still be present")
+	}
+}
+
+func TestMatchFlatNode_EmptyNodes(t *testing.T) {
+	got := matchFlatNode(nil, "#foo")
+	if got != 0 {
+		t.Errorf("matchFlatNode(nil, #foo) = %d, want 0", got)
+	}
+
+	got = matchFlatNode([]flatNode{}, ".bar")
+	if got != 0 {
+		t.Errorf("matchFlatNode([], .bar) = %d, want 0", got)
+	}
+}
+
+func TestMatchFlatNode_EmptySelector(t *testing.T) {
+	nodes := []flatNode{
+		{NodeID: 1, NodeType: 1, NodeName: "DIV"},
+	}
+	got := matchFlatNode(nodes, "")
+	if got != 0 {
+		t.Errorf("matchFlatNode with empty selector = %d, want 0", got)
+	}
+}
+
+func TestMatchFlatNode_ReturnsFirstMatch(t *testing.T) {
+	nodes := []flatNode{
+		{NodeID: 10, NodeType: 1, NodeName: "DIV", Attributes: []string{"class", "item"}},
+		{NodeID: 20, NodeType: 1, NodeName: "DIV", Attributes: []string{"class", "item"}},
+	}
+	got := matchFlatNode(nodes, ".item")
+	if got != 10 {
+		t.Errorf("matchFlatNode should return first match, got %d, want 10", got)
+	}
+}
+
+func TestMatchFlatNode_TagCaseInsensitive(t *testing.T) {
+	nodes := []flatNode{
+		{NodeID: 1, NodeType: 1, NodeName: "INPUT"},
+	}
+	tests := []struct {
+		sel  string
+		want int64
+	}{
+		{"input", 1},
+		{"INPUT", 1},
+		{"Input", 1},
+		{"iNpUt", 1},
+	}
+	for _, tt := range tests {
+		got := matchFlatNode(nodes, tt.sel)
+		if got != tt.want {
+			t.Errorf("matchFlatNode(%q) = %d, want %d", tt.sel, got, tt.want)
+		}
+	}
+}
+
+func TestMatchFlatNode_ClassPartialNoMatch(t *testing.T) {
+	nodes := []flatNode{
+		{NodeID: 1, NodeType: 1, NodeName: "DIV", Attributes: []string{"class", "button-primary"}},
+	}
+	got := matchFlatNode(nodes, ".button")
+	if got != 0 {
+		t.Errorf("partial class match should not match, got %d", got)
+	}
+}
+
+func TestMatchFlatNode_IDExactMatch(t *testing.T) {
+	nodes := []flatNode{
+		{NodeID: 1, NodeType: 1, NodeName: "DIV", Attributes: []string{"id", "main-content"}},
+	}
+	got := matchFlatNode(nodes, "#main")
+	if got != 0 {
+		t.Errorf("partial ID should not match, got %d", got)
+	}
+	got = matchFlatNode(nodes, "#main-content")
+	if got != 1 {
+		t.Errorf("exact ID should match, got %d", got)
+	}
+}
+
+func TestMatchFlatNode_NoAttributes(t *testing.T) {
+	nodes := []flatNode{
+		{NodeID: 1, NodeType: 1, NodeName: "BR"},
+	}
+	got := matchFlatNode(nodes, "#anything")
+	if got != 0 {
+		t.Errorf("node without attrs should not match ID selector, got %d", got)
+	}
+	got = matchFlatNode(nodes, ".anything")
+	if got != 0 {
+		t.Errorf("node without attrs should not match class selector, got %d", got)
+	}
+	got = matchFlatNode(nodes, "br")
+	if got != 1 {
+		t.Errorf("node without attrs should match tag selector, got %d", got)
+	}
+}
+
+func TestFlatNodeStruct(t *testing.T) {
+	n := flatNode{
+		NodeID:     42,
+		NodeType:   1,
+		NodeName:   "DIV",
+		Attributes: []string{"id", "test", "class", "foo"},
+	}
+	if n.NodeID != 42 {
+		t.Errorf("NodeID = %d, want 42", n.NodeID)
+	}
+	if n.NodeType != 1 {
+		t.Errorf("NodeType = %d, want 1", n.NodeType)
+	}
+	if n.NodeName != "DIV" {
+		t.Errorf("NodeName = %q, want DIV", n.NodeName)
+	}
+	if len(n.Attributes) != 4 {
+		t.Errorf("Attributes len = %d, want 4", len(n.Attributes))
+	}
+}
+
+func TestFlatNodeEmptyAttributes(t *testing.T) {
+	n := flatNode{NodeID: 1, NodeType: 1, NodeName: "BR"}
+	if n.Attributes != nil {
+		t.Errorf("nil Attributes should be nil, got %v", n.Attributes)
+	}
+}

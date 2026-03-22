@@ -3,6 +3,8 @@ package browse
 import (
 	"errors"
 	"testing"
+
+	"github.com/felixgeelhaar/statekit"
 )
 
 func TestTaskLifecycleHappyPath(t *testing.T) {
@@ -118,5 +120,152 @@ func TestTaskLifecycleMatches(t *testing.T) {
 	}
 	if tracker.Matches(StateRunning) {
 		t.Error("should not match running")
+	}
+}
+
+func TestTaskLifecycleContextTaskName(t *testing.T) {
+	tracker, err := NewTaskTracker("my-task")
+	if err != nil {
+		t.Fatalf("NewTaskTracker: %v", err)
+	}
+	defer tracker.Stop()
+
+	ctx := tracker.Context()
+	if ctx.TaskName != "my-task" {
+		t.Errorf("TaskName = %q, want %q", ctx.TaskName, "my-task")
+	}
+}
+
+func TestTaskLifecycleMultipleRetries(t *testing.T) {
+	tracker, err := NewTaskTracker("multi-retry")
+	if err != nil {
+		t.Fatalf("NewTaskTracker: %v", err)
+	}
+	defer tracker.Stop()
+
+	tracker.Start()
+	tracker.Retry()
+	tracker.Start()
+	tracker.Retry()
+	tracker.Start()
+
+	if tracker.Context().Attempt != 3 {
+		t.Errorf("expected attempt=3, got %d", tracker.Context().Attempt)
+	}
+
+	tracker.Success()
+	if !tracker.IsDone() {
+		t.Error("should be done after success")
+	}
+}
+
+func TestTaskLifecycleAbortIsFinal(t *testing.T) {
+	tracker, err := NewTaskTracker("abort-final")
+	if err != nil {
+		t.Fatalf("NewTaskTracker: %v", err)
+	}
+	defer tracker.Stop()
+
+	tracker.Start()
+	tracker.Abort()
+
+	if !tracker.IsDone() {
+		t.Error("aborted should be a final state")
+	}
+	if !tracker.Matches(StateAborted) {
+		t.Error("should match StateAborted")
+	}
+}
+
+func TestTaskLifecycleSuccessIsFinal(t *testing.T) {
+	tracker, err := NewTaskTracker("success-final")
+	if err != nil {
+		t.Fatalf("NewTaskTracker: %v", err)
+	}
+	defer tracker.Stop()
+
+	tracker.Start()
+	tracker.Success()
+
+	if !tracker.IsDone() {
+		t.Error("success should be a final state")
+	}
+	if !tracker.Matches(StateSuccess) {
+		t.Error("should match StateSuccess")
+	}
+}
+
+func TestTaskLifecycleNotDoneWhileRunning(t *testing.T) {
+	tracker, err := NewTaskTracker("running")
+	if err != nil {
+		t.Fatalf("NewTaskTracker: %v", err)
+	}
+	defer tracker.Stop()
+
+	tracker.Start()
+	if tracker.IsDone() {
+		t.Error("running should not be done")
+	}
+}
+
+func TestTaskLifecycleNotDoneWhilePending(t *testing.T) {
+	tracker, err := NewTaskTracker("pending")
+	if err != nil {
+		t.Fatalf("NewTaskTracker: %v", err)
+	}
+	defer tracker.Stop()
+
+	if tracker.IsDone() {
+		t.Error("pending should not be done")
+	}
+}
+
+func TestTaskLifecycleContextInitialValues(t *testing.T) {
+	tracker, err := NewTaskTracker("init-ctx")
+	if err != nil {
+		t.Fatalf("NewTaskTracker: %v", err)
+	}
+	defer tracker.Stop()
+
+	ctx := tracker.Context()
+	if ctx.Attempt != 0 {
+		t.Errorf("initial Attempt = %d, want 0", ctx.Attempt)
+	}
+	if ctx.LastErr != nil {
+		t.Errorf("initial LastErr = %v, want nil", ctx.LastErr)
+	}
+}
+
+func TestNewTaskLifecycleReturnsValidConfig(t *testing.T) {
+	cfg, err := NewTaskLifecycle("test")
+	if err != nil {
+		t.Fatalf("NewTaskLifecycle: %v", err)
+	}
+	if cfg == nil {
+		t.Fatal("NewTaskLifecycle returned nil config")
+	}
+}
+
+func TestEventAndStateConstants(t *testing.T) {
+	events := []statekit.EventType{EventStart, EventSuccess, EventFail, EventRetry, EventAbort, EventReset}
+	for _, e := range events {
+		if e == "" {
+			t.Error("event type should not be empty")
+		}
+	}
+
+	states := []statekit.StateID{StatePending, StateRunning, StateSuccess, StateFailed, StateAborted, StateRetrying}
+	for _, s := range states {
+		if s == "" {
+			t.Error("state ID should not be empty")
+		}
+	}
+
+	unique := make(map[statekit.StateID]bool)
+	for _, s := range states {
+		if unique[s] {
+			t.Errorf("duplicate state: %s", s)
+		}
+		unique[s] = true
 	}
 }

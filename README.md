@@ -11,8 +11,8 @@
   <a href="https://github.com/felixgeelhaar/scout/blob/main/LICENSE"><img src="https://img.shields.io/github/license/felixgeelhaar/scout?style=flat-square" alt="License"></a>
   <a href="https://github.com/felixgeelhaar/scout/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/felixgeelhaar/scout/ci.yml?style=flat-square&label=CI" alt="CI"></a>
   <a href="https://pkg.go.dev/github.com/felixgeelhaar/scout"><img src="https://img.shields.io/badge/go.dev-reference-007d9c?style=flat-square" alt="Go Reference"></a>
-  <img src="docs/coverage-badge.svg" alt="Coverage">
-  <img src="docs/nox-badge.svg" alt="Security">
+  <img src="docs/coverage-badge.svg?v=2" alt="Coverage">
+  <img src="docs/nox-badge.svg?v=2" alt="Security">
 </p>
 
 A single `scout` binary gives you a full CLI, a 66-tool MCP server, and a Go library with Gin-like middleware composition.
