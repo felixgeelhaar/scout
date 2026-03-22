@@ -148,3 +148,103 @@ func TestTraceAfterAction_WithScreenshots(t *testing.T) {
 		t.Errorf("BeforeImg: got %q", s.trace.events[0].BeforeImg)
 	}
 }
+
+func TestTraceBeforeAction_Tracing(t *testing.T) {
+	s := newTestSession()
+	s.tracing = true
+	s.trace = &traceState{startTime: time.Now()}
+
+	start, _ := s.traceBeforeAction("click", "#btn", "", "")
+	if start.IsZero() {
+		t.Error("start should not be zero when tracing")
+	}
+}
+
+func TestCaptureTraceScreenshot_NilPage(t *testing.T) {
+	s := newTestSession()
+	result := s.captureTraceScreenshot()
+	if result != nil {
+		t.Error("expected nil for nil page")
+	}
+}
+
+func TestEnsurePage_ClosedSession(t *testing.T) {
+	s := newTestSession()
+	s.closed = true
+	err := s.ensurePage()
+	if err == nil {
+		t.Error("expected error for closed session")
+	}
+	if err.Error() != "session is closed" {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSessionConfig_Defaults(t *testing.T) {
+	cfg := SessionConfig{}
+	if cfg.Timeout != 0 {
+		t.Errorf("default Timeout should be 0 (set in constructor)")
+	}
+	if cfg.Headless {
+		t.Error("default Headless should be false")
+	}
+}
+
+func TestNewSessionFromBrowser_DefaultTimeout(t *testing.T) {
+	cfg := SessionConfig{}
+	s := NewSessionFromBrowser(nil, cfg)
+	if s.timeout != 30*time.Second {
+		t.Errorf("default timeout: got %v, want 30s", s.timeout)
+	}
+}
+
+func TestNewSessionFromBrowser_CustomTimeout(t *testing.T) {
+	cfg := SessionConfig{Timeout: 10 * time.Second}
+	s := NewSessionFromBrowser(nil, cfg)
+	if s.timeout != 10*time.Second {
+		t.Errorf("timeout: got %v, want 10s", s.timeout)
+	}
+}
+
+func TestNewSessionFromBrowser_ContentOpts(t *testing.T) {
+	cfg := SessionConfig{}
+	s := NewSessionFromBrowser(nil, cfg)
+	if s.contentOpts.MaxLength != 4000 {
+		t.Errorf("MaxLength: got %d, want 4000", s.contentOpts.MaxLength)
+	}
+}
+
+func TestNewSessionFromBrowser_Stealth(t *testing.T) {
+	cfg := SessionConfig{Stealth: true}
+	s := NewSessionFromBrowser(nil, cfg)
+	if !s.stealth {
+		t.Error("stealth should be true")
+	}
+}
+
+func TestTraceAfterAction_NilTrace(t *testing.T) {
+	s := newTestSession()
+	s.tracing = true
+	s.trace = nil
+	s.traceAfterAction(time.Now(), nil, "click", "", "", "", nil)
+}
+
+func TestTraceAfterAction_MultipleEvents(t *testing.T) {
+	s := newTestSession()
+	s.tracing = true
+	s.trace = &traceState{startTime: time.Now()}
+
+	for i := 0; i < 5; i++ {
+		start := time.Now()
+		s.traceAfterAction(start, nil, "click", "#btn", "", "", nil)
+	}
+
+	if len(s.trace.events) != 5 {
+		t.Errorf("expected 5 events, got %d", len(s.trace.events))
+	}
+	for i, ev := range s.trace.events {
+		if ev.Index != i {
+			t.Errorf("event[%d].Index = %d", i, ev.Index)
+		}
+	}
+}
