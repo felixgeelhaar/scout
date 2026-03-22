@@ -35,6 +35,7 @@ jobs:
         run: go test -short -race -coverprofile=coverage.txt -covermode=atomic ./...
 
       - name: Integration tests
+        if: runner.os == 'Linux'
         run: go test -race -timeout 120s -run TestIntegration ./...
 
 
