@@ -20,7 +20,7 @@ func (s *Session) ObserveDiff() (*Observation, *DOMDiff, error) {
 	// Install mutation observer if not already active
 	if !s.diffInstalled {
 		if err := s.installMutationObserver(); err != nil {
-			return nil, nil, fmt.Errorf("agent: failed to install mutation observer: %w", err)
+			return nil, nil, fmt.Errorf("failed to install mutation observer: %w", err)
 		}
 		s.diffInstalled = true
 	}

@@ -152,7 +152,7 @@ func (s *Session) UploadFile(selector, filePath string) error {
 
 	nodeID, err := s.querySelector(selector)
 	if err != nil {
-		return fmt.Errorf("agent: file input %q not found: %w", selector, err)
+		return fmt.Errorf("file input %q not found: %w", selector, err)
 	}
 
 	// Use DOM.setFileInputFiles CDP command
@@ -167,7 +167,7 @@ func (s *Session) UploadFile(selector, filePath string) error {
 		"objectId": objectID,
 	})
 	if err != nil {
-		return fmt.Errorf("agent: file upload failed: %w", err)
+		return fmt.Errorf("file upload failed: %w", err)
 	}
 
 	return nil
@@ -190,16 +190,16 @@ func (s *Session) CompareTabs(tab1, tab2 string) (*PageDiff, error) {
 	defer s.mu.Unlock()
 
 	if s.tabs == nil {
-		return nil, fmt.Errorf("agent: no tabs open")
+		return nil, fmt.Errorf("no tabs open")
 	}
 
 	t1, ok1 := s.tabs.tabs[tab1]
 	t2, ok2 := s.tabs.tabs[tab2]
 	if !ok1 {
-		return nil, fmt.Errorf("agent: tab %q not found", tab1)
+		return nil, fmt.Errorf("tab %q not found", tab1)
 	}
 	if !ok2 {
-		return nil, fmt.Errorf("agent: tab %q not found", tab2)
+		return nil, fmt.Errorf("tab %q not found", tab2)
 	}
 
 	// Extract key content from both pages

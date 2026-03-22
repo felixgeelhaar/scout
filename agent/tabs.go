@@ -52,12 +52,12 @@ func (s *Session) OpenTab(name, url string) (*PageResult, error) {
 	}
 
 	if _, exists := s.tabs.tabs[name]; exists {
-		return nil, fmt.Errorf("agent: tab %q already exists", name)
+		return nil, fmt.Errorf("tab %q already exists", name)
 	}
 
 	page, err := s.browser.NewPage()
 	if err != nil {
-		return nil, fmt.Errorf("agent: failed to create tab: %w", err)
+		return nil, fmt.Errorf("failed to create tab: %w", err)
 	}
 
 	if err := page.Navigate(url); err != nil {
@@ -79,12 +79,12 @@ func (s *Session) SwitchTab(name string) (*PageResult, error) {
 	defer s.mu.Unlock()
 
 	if s.tabs == nil {
-		return nil, fmt.Errorf("agent: no tabs open")
+		return nil, fmt.Errorf("no tabs open")
 	}
 
 	tab, ok := s.tabs.tabs[name]
 	if !ok {
-		return nil, fmt.Errorf("agent: tab %q not found", name)
+		return nil, fmt.Errorf("tab %q not found", name)
 	}
 
 	s.tabs.active = name
@@ -100,16 +100,16 @@ func (s *Session) CloseTab(name string) error {
 	defer s.mu.Unlock()
 
 	if s.tabs == nil {
-		return fmt.Errorf("agent: no tabs open")
+		return fmt.Errorf("no tabs open")
 	}
 
 	if name == s.tabs.active {
-		return fmt.Errorf("agent: cannot close active tab %q — switch to another tab first", name)
+		return fmt.Errorf("cannot close active tab %q — switch to another tab first", name)
 	}
 
 	tab, ok := s.tabs.tabs[name]
 	if !ok {
-		return fmt.Errorf("agent: tab %q not found", name)
+		return fmt.Errorf("tab %q not found", name)
 	}
 
 	_ = tab.page.Close()

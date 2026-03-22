@@ -90,7 +90,7 @@ func (s *Session) SaveProfile(path string) error {
 
 	data, err := json.MarshalIndent(profile, "", "  ")
 	if err != nil {
-		return fmt.Errorf("agent: failed to marshal profile: %w", err)
+		return fmt.Errorf("failed to marshal profile: %w", err)
 	}
 	return os.WriteFile(path, data, 0o600)
 }
@@ -100,12 +100,12 @@ func (s *Session) SaveProfile(path string) error {
 func (s *Session) LoadProfile(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("agent: failed to read profile: %w", err)
+		return fmt.Errorf("failed to read profile: %w", err)
 	}
 
 	var profile Profile
 	if err := json.Unmarshal(data, &profile); err != nil {
-		return fmt.Errorf("agent: failed to parse profile: %w", err)
+		return fmt.Errorf("failed to parse profile: %w", err)
 	}
 
 	return s.ApplyProfile(&profile)

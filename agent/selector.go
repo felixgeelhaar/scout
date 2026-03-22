@@ -53,7 +53,7 @@ func (s *Session) resolveSelector(selector string) (int64, error) {
 				hint += ","
 			}
 		}
-		return 0, fmt.Errorf("agent: %s", hint)
+		return 0, fmt.Errorf("%s", hint)
 	}
 
 	return 0, err
@@ -123,7 +123,7 @@ func (s *Session) findByText(tag, text string) (int64, error) {
 		return 0, err
 	}
 	if b, ok := result.(bool); !ok || !b {
-		return 0, fmt.Errorf("agent: no element found with text %q", text)
+		return 0, fmt.Errorf("no element found with text %q", text)
 	}
 
 	// Now query the marked element

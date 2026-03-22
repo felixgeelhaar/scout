@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -101,7 +103,7 @@ type AnnotatedScreenshotResult struct {
 }
 
 type ClickLabelInput struct {
-	Label int `json:"label" jsonschema:"required,description=Label number from annotated screenshot"`
+	Label json.Number `json:"label" jsonschema:"required,description=Label number from annotated screenshot (e.g. 8)"`
 }
 
 type ComponentStateInput struct {
@@ -367,7 +369,11 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 	srv.Tool("click_label").
 		Description("Click an element by its label number from annotated_screenshot.").
 		Handler(func(ctx context.Context, input ClickLabelInput) (*agent.PageResult, error) {
-			return s().ClickLabel(input.Label)
+			label, err := strconv.Atoi(input.Label.String())
+			if err != nil {
+				return nil, fmt.Errorf("label must be a number (e.g. 8), got %q", input.Label.String())
+			}
+			return s().ClickLabel(label)
 		})
 
 	srv.Tool("type").
@@ -591,6 +597,15 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 		Description("Extract global app state (Redux, Next.js, Nuxt, Remix, SvelteKit, Gatsby, Astro, Alpine, HTMX).").
 		Handler(func(ctx context.Context, input ObserveInput) (map[string]any, error) {
 			return s().GetAppState()
+		})
+
+	// --- Dialog detection ---
+
+	srv.Tool("detect_dialog").
+		ReadOnly().
+		Description("Check if a modal, dialog, popup, or overlay is currently visible. Returns its title, text, buttons, and inputs.").
+		Handler(func(ctx context.Context, input ObserveInput) (*agent.DialogInfo, error) {
+			return s().DetectDialog()
 		})
 
 	// --- Smart helpers ---

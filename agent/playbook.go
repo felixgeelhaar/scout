@@ -79,7 +79,7 @@ func (s *Session) StopRecordingPlaybook() (*Playbook, error) {
 	defer s.mu.Unlock()
 
 	if s.recording == nil {
-		return nil, fmt.Errorf("agent: no recording in progress")
+		return nil, fmt.Errorf("no recording in progress")
 	}
 
 	pb := &Playbook{

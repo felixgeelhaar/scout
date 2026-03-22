@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -74,12 +75,12 @@ func (s *Session) observeInternal() (*Observation, error) {
 
 	result, err := s.page.Evaluate(js)
 	if err != nil {
-		return nil, fmt.Errorf("agent: failed to observe page: %w", err)
+		return nil, fmt.Errorf("failed to observe page: %w", err)
 	}
 
 	m, ok := result.(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("agent: unexpected observation result type")
+		return nil, fmt.Errorf("unexpected observation result type")
 	}
 
 	maxLinks := s.contentOpts.MaxLinks
@@ -157,6 +158,40 @@ func (s *Session) observeInternal() (*Observation, error) {
 		for k, v := range meta {
 			if s, ok := v.(string); ok {
 				obs.Meta[k] = s
+			}
+		}
+	}
+
+	// Check for active dialogs/modals
+	dialogJS := `(function() {
+		for (const d of document.querySelectorAll('dialog[open],[aria-modal="true"],[role="dialog"],[role="alertdialog"]')) {
+			const s = window.getComputedStyle(d);
+			if (s.display !== 'none' && s.visibility !== 'hidden') {
+				return JSON.stringify({found:true, type: d.tagName==='DIALOG'?'dialog':'modal', text: d.textContent.trim().slice(0,200)});
+			}
+		}
+		for (const sel of ['[class*="modal"]','[class*="dialog"]','[class*="overlay"]']) {
+			for (const el of document.querySelectorAll(sel)) {
+				const s = window.getComputedStyle(el);
+				if (s.display!=='none' && s.visibility!=='hidden' && s.opacity!=='0' && (s.position==='fixed'||s.position==='absolute') && (parseInt(s.zIndex)||0)>=100) {
+					return JSON.stringify({found:true, type:'overlay', text: el.textContent.trim().slice(0,200)});
+				}
+			}
+		}
+		return JSON.stringify({found:false});
+	})()`
+	dialogResult, err := s.page.Evaluate(dialogJS)
+	if err == nil {
+		if dStr, ok := dialogResult.(string); ok {
+			var dInfo struct {
+				Found bool   `json:"found"`
+				Type  string `json:"type"`
+				Text  string `json:"text"`
+			}
+			if json.Unmarshal([]byte(dStr), &dInfo) == nil && dInfo.Found {
+				obs.HasDialog = true
+				obs.DialogType = dInfo.Type
+				obs.DialogText = dInfo.Text
 			}
 		}
 	}

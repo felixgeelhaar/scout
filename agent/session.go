@@ -70,7 +70,7 @@ func NewSession(cfg SessionConfig) (*Session, error) {
 
 	engine := browse.New(opts...)
 	if err := engine.Launch(); err != nil {
-		return nil, fmt.Errorf("agent: failed to launch browser: %w", err)
+		return nil, fmt.Errorf("failed to launch browser: %w", err)
 	}
 
 	return &Session{
@@ -108,14 +108,14 @@ func (s *Session) Close() error {
 // ensurePage creates a page if none exists.
 func (s *Session) ensurePage() error {
 	if s.closed {
-		return fmt.Errorf("agent: session is closed")
+		return fmt.Errorf("session is closed")
 	}
 	if s.page != nil {
 		return nil
 	}
 	page, err := s.browser.NewPage()
 	if err != nil {
-		return fmt.Errorf("agent: failed to create page: %w", err)
+		return fmt.Errorf("failed to create page: %w", err)
 	}
 	s.page = page
 	return nil
@@ -131,7 +131,7 @@ func (s *Session) Navigate(url string) (*PageResult, error) {
 	}
 	page, err := s.browser.NewPage()
 	if err != nil {
-		return nil, fmt.Errorf("agent: failed to create page: %w", err)
+		return nil, fmt.Errorf("failed to create page: %w", err)
 	}
 	s.page = page
 	s.diffInstalled = false // reset mutation observer on new page
@@ -395,12 +395,12 @@ func (s *Session) ExtractTable(tableSelector string) (*TableResult, error) {
 		return nil, err
 	}
 	if result == nil {
-		return nil, fmt.Errorf("agent: table %q not found", tableSelector)
+		return nil, fmt.Errorf("table %q not found", tableSelector)
 	}
 
 	m, ok := result.(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("agent: unexpected table result type")
+		return nil, fmt.Errorf("unexpected table result type")
 	}
 
 	tr := &TableResult{Selector: tableSelector}

@@ -184,11 +184,11 @@ func (s *Session) ComponentState(selector string) (map[string]any, error) {
 		return nil, err
 	}
 	if result == nil {
-		return nil, fmt.Errorf("agent: no framework component found at %s", selector)
+		return nil, fmt.Errorf("no framework component found at %s", selector)
 	}
 	str, ok := result.(string)
 	if !ok {
-		return nil, fmt.Errorf("agent: unexpected result type")
+		return nil, fmt.Errorf("unexpected result type")
 	}
 	var state map[string]any
 	if err := json.Unmarshal([]byte(str), &state); err != nil {
@@ -383,7 +383,7 @@ func (s *Session) DispatchEvent(selector, eventType string, detail map[string]an
 		return err
 	}
 	if b, ok := result.(bool); !ok || !b {
-		return fmt.Errorf("agent: element %s not found", selector)
+		return fmt.Errorf("element %s not found", selector)
 	}
 	return nil
 }

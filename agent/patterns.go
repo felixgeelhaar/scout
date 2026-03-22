@@ -120,10 +120,10 @@ func (s *Session) AutoExtract() (*ExtractedPattern, error) {
 
 	result, err := s.page.Evaluate(js)
 	if err != nil {
-		return nil, fmt.Errorf("agent: auto-extract failed: %w", err)
+		return nil, fmt.Errorf("auto-extract failed: %w", err)
 	}
 	if result == nil {
-		return nil, fmt.Errorf("agent: no repeating pattern found on page")
+		return nil, fmt.Errorf("no repeating pattern found on page")
 	}
 
 	str, _ := result.(string)

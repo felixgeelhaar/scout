@@ -59,7 +59,7 @@ func (s *Session) DoubleClick(selector string) (*PageResult, error) {
 		return nil, err
 	}
 	if b, ok := result.(bool); !ok || !b {
-		return nil, fmt.Errorf("agent: element %s not found", selector)
+		return nil, fmt.Errorf("element %s not found", selector)
 	}
 
 	_ = s.page.WaitStable(300 * time.Millisecond)
@@ -91,7 +91,7 @@ func (s *Session) RightClick(selector string) (*PageResult, error) {
 		return nil, err
 	}
 	if b, ok := result.(bool); !ok || !b {
-		return nil, fmt.Errorf("agent: element %s not found", selector)
+		return nil, fmt.Errorf("element %s not found", selector)
 	}
 
 	return s.pageResult()
@@ -127,7 +127,7 @@ func (s *Session) SelectOption(selector, optionText string) (*ElementResult, err
 		return nil, err
 	}
 	if result == nil {
-		return nil, fmt.Errorf("agent: option %q not found in %s", optionText, selector)
+		return nil, fmt.Errorf("option %q not found in %s", optionText, selector)
 	}
 
 	str, _ := result.(string)
@@ -167,7 +167,7 @@ func (s *Session) ScrollTo(selector string) (*PageResult, error) {
 		return nil, err
 	}
 	if b, ok := result.(bool); !ok || !b {
-		return nil, fmt.Errorf("agent: element %s not found", selector)
+		return nil, fmt.Errorf("element %s not found", selector)
 	}
 
 	time.Sleep(300 * time.Millisecond)
@@ -215,7 +215,7 @@ func (s *Session) Focus(selector string) (*PageResult, error) {
 		return nil, err
 	}
 	if b, ok := result.(bool); !ok || !b {
-		return nil, fmt.Errorf("agent: element %s not found", selector)
+		return nil, fmt.Errorf("element %s not found", selector)
 	}
 	return s.pageResult()
 }
@@ -256,7 +256,7 @@ func (s *Session) DragDrop(fromSelector, toSelector string) (*PageResult, error)
 		return nil, err
 	}
 	if b, ok := result.(bool); !ok || !b {
-		return nil, fmt.Errorf("agent: drag from %s to %s failed", fromSelector, toSelector)
+		return nil, fmt.Errorf("drag from %s to %s failed", fromSelector, toSelector)
 	}
 
 	_ = s.page.WaitStable(300 * time.Millisecond)

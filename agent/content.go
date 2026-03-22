@@ -133,7 +133,7 @@ func (s *Session) Markdown() (string, error) {
 
 	result, err := s.page.Evaluate(js)
 	if err != nil {
-		return "", fmt.Errorf("agent: markdown conversion failed: %w", err)
+		return "", fmt.Errorf("markdown conversion failed: %w", err)
 	}
 	md, _ := result.(string)
 	return md, nil
@@ -182,7 +182,7 @@ func (s *Session) ReadableText() (string, error) {
 
 	result, err := s.page.Evaluate(js)
 	if err != nil {
-		return "", fmt.Errorf("agent: readability extraction failed: %w", err)
+		return "", fmt.Errorf("readability extraction failed: %w", err)
 	}
 	text, _ := result.(string)
 	return text, nil

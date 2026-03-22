@@ -84,7 +84,7 @@ func (s *Session) AnnotatedScreenshot() (*AnnotatedResult, error) {
 
 	result, err := s.page.Evaluate(js)
 	if err != nil {
-		return nil, fmt.Errorf("agent: annotation failed: %w", err)
+		return nil, fmt.Errorf("annotation failed: %w", err)
 	}
 
 	// Parse element mapping
@@ -106,7 +106,7 @@ func (s *Session) AnnotatedScreenshot() (*AnnotatedResult, error) {
 	_, _ = s.page.Evaluate(`document.querySelectorAll('.__browse_label').forEach(el => el.remove())`)
 
 	if err != nil {
-		return nil, fmt.Errorf("agent: annotated screenshot failed: %w", err)
+		return nil, fmt.Errorf("annotated screenshot failed: %w", err)
 	}
 
 	return &AnnotatedResult{
@@ -149,7 +149,7 @@ func (s *Session) ClickLabel(label int) (*PageResult, error) {
 		return nil, err
 	}
 	if b, ok := result.(bool); !ok || !b {
-		return nil, fmt.Errorf("agent: label %d not found", label)
+		return nil, fmt.Errorf("label %d not found", label)
 	}
 
 	_ = s.page.WaitStable(300 * 1e6) // 300ms

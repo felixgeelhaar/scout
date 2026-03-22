@@ -57,6 +57,9 @@ type Observation struct {
 	Buttons     []ButtonInfo      `json:"buttons,omitempty"`
 	Interactive int               `json:"interactive_elements"`
 	Meta        map[string]string `json:"meta,omitempty"`
+	HasDialog   bool              `json:"has_dialog,omitempty"`
+	DialogType  string            `json:"dialog_type,omitempty"` // dialog, modal, overlay
+	DialogText  string            `json:"dialog_text,omitempty"`
 }
 
 // LinkInfo describes a link on the page.

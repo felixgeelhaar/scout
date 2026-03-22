@@ -97,20 +97,20 @@ func (s *Session) DiscoverForm(formSelector string) (*FormDiscoveryResult, error
 
 	result, err := s.page.Evaluate(js)
 	if err != nil {
-		return nil, fmt.Errorf("agent: form discovery failed: %w", err)
+		return nil, fmt.Errorf("form discovery failed: %w", err)
 	}
 	if result == nil {
-		return nil, fmt.Errorf("agent: no form found")
+		return nil, fmt.Errorf("no form found")
 	}
 
 	str, ok := result.(string)
 	if !ok {
-		return nil, fmt.Errorf("agent: unexpected form discovery result")
+		return nil, fmt.Errorf("unexpected form discovery result")
 	}
 
 	var discovery FormDiscoveryResult
 	if err := json.Unmarshal([]byte(str), &discovery); err != nil {
-		return nil, fmt.Errorf("agent: failed to parse form discovery: %w", err)
+		return nil, fmt.Errorf("failed to parse form discovery: %w", err)
 	}
 
 	return &discovery, nil
@@ -225,7 +225,7 @@ func (s *Session) discoverFormInternal(formSelector string) (*FormDiscoveryResul
 		return nil, err
 	}
 	if result == nil {
-		return nil, fmt.Errorf("agent: no form found")
+		return nil, fmt.Errorf("no form found")
 	}
 	str, _ := result.(string)
 	var discovery FormDiscoveryResult
