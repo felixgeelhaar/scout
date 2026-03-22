@@ -14,20 +14,15 @@ linters:
     - misspell
     - bodyclose
     - nilerr
+  settings:
+    errcheck:
+      check-type-assertions: true
+    govet:
+      disable:
+        - fieldalignment
+        - shadow
 
 formatters:
   enable:
     - gofmt
     - goimports
-
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-  govet:
-    enable-all: true
-    disable:
-      - fieldalignment
-
-issues:
-  exclude-dirs:
-    - .claude

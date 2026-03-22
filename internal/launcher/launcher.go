@@ -112,7 +112,12 @@ func freePort() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	port := l.Addr().(*net.TCPAddr).Port
+	addr, ok := l.Addr().(*net.TCPAddr)
+	if !ok {
+		_ = l.Close()
+		return 0, fmt.Errorf("browse: unexpected listener address type")
+	}
+	port := addr.Port
 	_ = l.Close()
 	return port, nil
 }

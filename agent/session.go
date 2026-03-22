@@ -468,6 +468,14 @@ func (s *Session) Eval(js string) (any, error) {
 	return s.page.Evaluate(js)
 }
 
+// Page returns the underlying Page for advanced operations.
+// The caller must not hold the session mutex.
+func (s *Session) Page() *browse.Page {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.page
+}
+
 // Screenshot captures the page as an image.
 // Automatically compresses to fit within MaxScreenshotBytes (default 5MB).
 func (s *Session) Screenshot() ([]byte, error) {

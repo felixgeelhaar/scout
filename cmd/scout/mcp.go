@@ -12,6 +12,7 @@ import (
 
 	"github.com/felixgeelhaar/mcp-go"
 
+	browse "github.com/felixgeelhaar/scout"
 	"github.com/felixgeelhaar/scout/agent"
 )
 
@@ -497,7 +498,14 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 			if err := maybeNavigate(input.URL); err != nil {
 				return "", err
 			}
-			data, err := s().Screenshot()
+			// Use aggressive compression for MCP — 200KB max to avoid blowing LLM context
+			page := s().Page()
+			if page == nil {
+				return "", fmt.Errorf("no page open")
+			}
+			data, err := page.ScreenshotWithOptions(browse.ScreenshotOptions{
+				MaxSize: 200 * 1024, // 200KB — ~2.5k tokens in base64
+			})
 			if err != nil {
 				return "", err
 			}
