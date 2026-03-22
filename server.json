@@ -1,0 +1,30 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.felixgeelhaar/scout",
+  "title": "Scout",
+  "description": "Single-binary MCP server with 57 tools for browser automation. Pure Chrome DevTools Protocol, DOM diffing, content distillation, semantic form filling, annotated screenshots, and Gin-like middleware.",
+  "repository": {
+    "url": "https://github.com/felixgeelhaar/scout",
+    "source": "github"
+  },
+  "version": "1.0.6",
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/felixgeelhaar/scout:v1.0.6",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "value": "mcp",
+          "isFixed": true
+        },
+        {
+          "value": "serve",
+          "isFixed": true
+        }
+      ]
+    }
+  ]
+}

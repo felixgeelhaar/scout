@@ -46,6 +46,48 @@ changelog:
       - "^chore:"
       - "^ci:"
 
+dockers:
+  - image_templates:
+      - "ghcr.io/felixgeelhaar/scout:{{ .Version }}-amd64"
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.source=https://github.com/felixgeelhaar/scout"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=io.modelcontextprotocol.server.name=io.github.felixgeelhaar/scout"
+    dockerfile: Dockerfile
+    goos: linux
+    goarch: amd64
+
+  - image_templates:
+      - "ghcr.io/felixgeelhaar/scout:{{ .Version }}-arm64"
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.source=https://github.com/felixgeelhaar/scout"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=io.modelcontextprotocol.server.name=io.github.felixgeelhaar/scout"
+    dockerfile: Dockerfile
+    goos: linux
+    goarch: arm64
+
+docker_manifests:
+  - name_template: "ghcr.io/felixgeelhaar/scout:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/felixgeelhaar/scout:{{ .Version }}-amd64"
+      - "ghcr.io/felixgeelhaar/scout:{{ .Version }}-arm64"
+
+  - name_template: "ghcr.io/felixgeelhaar/scout:latest"
+    image_templates:
+      - "ghcr.io/felixgeelhaar/scout:{{ .Version }}-amd64"
+      - "ghcr.io/felixgeelhaar/scout:{{ .Version }}-arm64"
+
 brews:
   - repository:
       owner: felixgeelhaar
