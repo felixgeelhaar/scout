@@ -75,11 +75,12 @@ nav .container{
 }
 .nav-logo .sigil{
   display:inline-flex;align-items:center;justify-content:center;
-  width:28px;height:28px;border-radius:6px;
-  background:linear-gradient(135deg,var(--blue),var(--blue-dim));
-  color:#fff;font-size:14px;font-weight:800;
-  font-family:var(--font-mono);
+  width:32px;height:32px;flex-shrink:0;
+  border-radius:8px;
+  background:rgba(59,130,246,.08);
+  padding:3px;
 }
+.nav-logo .sigil svg{width:26px;height:26px}
 .nav-links{display:flex;gap:24px;list-style:none}
 .nav-links a{
   color:var(--text-dim);text-decoration:none;font-size:14px;
@@ -106,6 +107,16 @@ nav .container{
   content:"";position:absolute;inset:0;
   background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(59,130,246,.08),transparent);
   pointer-events:none;
+}
+.hero-logo{
+  display:block;margin:0 auto 28px;
+  width:120px;height:120px;
+  filter:drop-shadow(0 0 32px rgba(59,130,246,.3)) drop-shadow(0 0 64px rgba(59,130,246,.12));
+  animation:hero-float 6s ease-in-out infinite;
+}
+@keyframes hero-float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-8px)}
 }
 .hero-badge{
   display:inline-flex;align-items:center;gap:8px;
@@ -462,7 +473,7 @@ a:focus-visible,button:focus-visible{
 <nav aria-label="Main navigation">
   <div class="container">
     <a href="#" class="nav-logo" aria-label="Scout home">
-      <span class="sigil" aria-hidden="true">S</span>
+      <span class="sigil" aria-hidden="true"><svg viewBox="0 0 200 200" fill="none"><path d="M20 100 Q60 44 100 44 Q140 44 180 100 Q140 156 100 156 Q60 156 20 100 Z" stroke="#3b82f6" stroke-width="12" stroke-linejoin="round"/><circle cx="100" cy="100" r="30" stroke="#3b82f6" stroke-width="8"/><polygon points="100,80 117,90 117,110 100,120 83,110 83,90" fill="#3b82f6"/></svg></span>
       Scout
     </a>
     <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false" onclick="this.setAttribute('aria-expanded',this.getAttribute('aria-expanded')==='false');document.querySelector('.nav-links').classList.toggle('open')">
@@ -489,17 +500,7 @@ a:focus-visible,button:focus-visible{
       <span>Browser automation for Go</span>
       <code>v1.0.6</code>
     </div>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="80" height="80" style="margin-bottom:16px">
-      <path d="M20 100 Q60 44 100 44 Q140 44 180 100 Q140 156 100 156 Q60 156 20 100 Z" fill="none" stroke="#3b82f6" stroke-width="7" stroke-linejoin="round"/>
-      <circle cx="100" cy="100" r="28" fill="none" stroke="#3b82f6" stroke-width="6"/>
-      <polygon points="100,82 115,91 115,109 100,118 85,109 85,91" fill="#3b82f6"/>
-      <polygon points="128,108 128,148 138,138 148,154 156,150 146,134 158,134" fill="#3b82f6"/>
-      <line x1="40" y1="88" x2="68" y2="88" stroke="#3b82f6" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
-      <line x1="40" y1="100" x2="65" y2="100" stroke="#3b82f6" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
-      <line x1="40" y1="112" x2="68" y2="112" stroke="#3b82f6" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
-      <line x1="132" y1="88" x2="160" y2="88" stroke="#3b82f6" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
-      <line x1="135" y1="100" x2="160" y2="100" stroke="#3b82f6" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
-    </svg>
+    <img src="logo.svg" alt="Scout — Observer Eye logo" class="hero-logo" width="120" height="120">
     <h1>Scout</h1>
     <p class="hero-sub">
       <strong>Gin-like browser automation</strong> with pure CDP, agent-optimized APIs, and a single-binary MCP server. No rod, no chromedp, no Node.js.
