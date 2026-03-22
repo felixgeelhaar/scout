@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2026-03-22
+
+### Added
+- Dialog/modal detection: `detect_dialog` tool finds `dialog[open]`, `aria-modal`, role=dialog, overlay modals
+- `observe` now includes `has_dialog`/`dialog_type`/`dialog_text` fields
+- Auto-pattern extraction: `auto_extract` detects repeating elements without selectors
+- Infinite scroll collection: `scroll_and_collect` auto-scrolls and collects items
+- Console error capture: `console_errors` surfaces JS errors/warnings
+- Auth wall detection: `detect_auth_wall` identifies login walls, paywalls, CAPTCHAs
+- File upload: `upload_file` via CDP DOM.setFileInputFiles
+- Two-page comparison: `compare_tabs` diffs content between tabs
+- Auto-detect Edge, Brave, Arc, Opera, Vivaldi browsers
+
+### Fixed
+- MCP screenshots capped at 200KB (~2.5k tokens) to avoid context overflow
+- `click_label` accepts both string "8" and number 8
+- Stripped internal "agent:" prefix from all error messages
+- WaitStable hard timeout (3s max) prevents SPA hangs
+- `observe`/`screenshot` accept optional `url` parameter
+- `configure` no longer hangs with concurrent agents
+- CI: fixed golangci-lint v2 config, Go version matrix, removed codecov
+
+### Changed
+- CLI defaults to visible browser (`--headless` to hide)
+
 ## [0.9.0] - 2026-03-22
 
 ### Added

@@ -2,7 +2,7 @@
 
 AI-powered browser automation for Go. Pure CDP over WebSocket — no rod, no chromedp, no Node.js.
 
-A single `scout` binary gives you a full CLI, a 50-tool MCP server, and a Go library with Gin-like middleware composition.
+A single `scout` binary gives you a full CLI, a 57-tool MCP server, and a Go library with Gin-like middleware composition.
 
 ```bash
 brew install felixgeelhaar/tap/scout
@@ -38,7 +38,7 @@ go install github.com/felixgeelhaar/scout/cmd/scout@latest
 go get github.com/felixgeelhaar/scout
 ```
 
-## MCP Server — 50 Tools
+## MCP Server — 57 Tools
 
 Single binary, zero runtime dependencies. Configure in any MCP client:
 
@@ -57,13 +57,14 @@ claude mcp add scout -- scout mcp serve           # Claude Code
 | **Navigation** | `navigate`, `observe`, `observe_diff`, `observe_with_budget` |
 | **Interaction** | `click`, `click_label`, `type`, `hover`, `double_click`, `right_click`, `select_option`, `scroll_to`, `scroll_by`, `focus`, `drag_drop`, `dispatch_event` |
 | **Forms** | `fill_form`, `fill_form_semantic`, `discover_form` |
-| **Extraction** | `extract`, `extract_all`, `extract_table`, `markdown`, `readable_text`, `accessibility_tree` |
+| **Extraction** | `extract`, `extract_all`, `extract_table`, `auto_extract`, `scroll_and_collect`, `markdown`, `readable_text`, `accessibility_tree` |
 | **Capture** | `screenshot`, `annotated_screenshot`, `pdf` |
 | **Network** | `enable_network_capture`, `network_requests` |
 | **Tabs** | `open_tab`, `switch_tab`, `close_tab`, `list_tabs` |
 | **Frameworks** | `wait_spa`, `detect_frameworks`, `component_state`, `app_state` |
 | **Playback** | `start_recording`, `stop_recording`, `save_playbook`, `replay_playbook` |
 | **Smart Helpers** | `dismiss_cookies`, `check_readiness`, `suggest_selectors`, `session_history` |
+| **Diagnostics** | `detect_dialog`, `detect_auth_wall`, `console_errors`, `compare_tabs`, `upload_file` |
 | **Utility** | `has_element`, `wait_for`, `configure` |
 
 All tools have MCP annotations (`ReadOnly`, `OpenWorld`, `ClosedWorld`, `Idempotent`) for smart auto-approval. Read-only tools like `observe`, `extract`, and `screenshot` run without permission prompts.
@@ -213,7 +214,7 @@ scout/
 │   └── budget.go                      # ObserveWithBudget, EstimateTokens
 ├── internal/cdp/                      # WebSocket CDP client (context-aware)
 ├── internal/launcher/                 # Chrome process management
-├── cmd/scout/                         # CLI + MCP server (50 tools)
+├── cmd/scout/                         # CLI + MCP server (57 tools)
 └── docs/                              # Landing page (GitHub Pages)
 ```
 
