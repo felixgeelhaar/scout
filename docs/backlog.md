@@ -142,3 +142,9 @@ Return estimated cost metadata with Observe responses so agents can make better 
 Cross-platform distribution via GoReleaser: builds for linux/darwin/windows x amd64/arm64, injects version+commit via ldflags, publishes GitHub Releases with SHA256 checksums, auto-updates Homebrew formula in felixgeelhaar/homebrew-tap. Install methods: brew install felixgeelhaar/tap/scout, curl install script (auto-detects OS/arch), go install github.com/felixgeelhaar/scout/cmd/scout@latest. GitHub Actions CI: test matrix (3 Go versions x 2 OS), lint, vet, build. Release workflow triggers on v* tags. GitHub Pages landing page at docs/index.html.
 
 ---
+
+## WebDriver BiDi — Cross-Browser Support (Firefox, Safari)
+
+Add WebDriver BiDi protocol support alongside CDP to enable Firefox and Safari automation. WebDriver BiDi is a W3C standard that works over WebSocket (like CDP) but is supported by Firefox (Marionette → BiDi), Chrome, and Safari (WebKit). Implementation: add internal/bidi/ package as an alternative to internal/cdp/, implement a BrowserProtocol interface that both CDP and BiDi satisfy, let Page delegate to the active protocol. Auto-detect browser type from the WebSocket endpoint and use the right protocol. This makes scout the first Go browser automation library with native cross-browser support via BiDi. Chromium browsers continue using CDP (faster, more features). Firefox and Safari use BiDi. Users select via WithBrowser("firefox") option or the launcher auto-detects installed browsers.
+
+---

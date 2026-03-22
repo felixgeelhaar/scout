@@ -117,21 +117,37 @@ func freePort() (int, error) {
 	return port, nil
 }
 
+// findChrome searches for any Chromium-based browser.
+// Checks Chrome, Edge, Brave, Arc, Opera, Vivaldi, and Chromium in order.
 func findChrome() (string, error) {
 	var candidates []string
 	switch runtime.GOOS {
 	case "darwin":
 		candidates = []string{
+			// Chrome
 			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-			"/Applications/Chromium.app/Contents/MacOS/Chromium",
 			"/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
+			// Edge
+			"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+			// Brave
+			"/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+			// Arc
+			"/Applications/Arc.app/Contents/MacOS/Arc",
+			// Opera
+			"/Applications/Opera.app/Contents/MacOS/Opera",
+			// Vivaldi
+			"/Applications/Vivaldi.app/Contents/MacOS/Vivaldi",
+			// Chromium
+			"/Applications/Chromium.app/Contents/MacOS/Chromium",
 		}
 	case "linux":
 		candidates = []string{
-			"google-chrome",
-			"google-chrome-stable",
-			"chromium",
-			"chromium-browser",
+			"google-chrome", "google-chrome-stable",
+			"microsoft-edge", "microsoft-edge-stable",
+			"brave-browser", "brave-browser-stable",
+			"opera",
+			"vivaldi", "vivaldi-stable",
+			"chromium", "chromium-browser",
 		}
 	case "windows":
 		for _, root := range []string{os.Getenv("PROGRAMFILES"), os.Getenv("PROGRAMFILES(X86)"), os.Getenv("LOCALAPPDATA")} {
@@ -140,6 +156,10 @@ func findChrome() (string, error) {
 			}
 			candidates = append(candidates,
 				filepath.Join(root, "Google", "Chrome", "Application", "chrome.exe"),
+				filepath.Join(root, "Microsoft", "Edge", "Application", "msedge.exe"),
+				filepath.Join(root, "BraveSoftware", "Brave-Browser", "Application", "brave.exe"),
+				filepath.Join(root, "Opera Software", "Opera Stable", "opera.exe"),
+				filepath.Join(root, "Vivaldi", "Application", "vivaldi.exe"),
 			)
 		}
 	}
