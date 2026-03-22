@@ -3,6 +3,9 @@ language: go
 policy:
   default:
     min: 25
+  exclude:
+    - ./cmd/scout/...
+    - ./examples/...
   domains:
     - name: middleware
       match:
@@ -20,11 +23,7 @@ policy:
       match:
         - ./internal/wait/...
       min: 0
-    - name: cmd
-      match:
-        - ./cmd/scout/...
-      min: 0
     - name: agent
       match:
         - ./agent/...
-      min: 0  # integration tests require Chrome; tested via go test ./... (no -short)
+      min: 0
