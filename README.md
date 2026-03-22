@@ -11,7 +11,7 @@
   <a href="https://github.com/felixgeelhaar/scout/blob/main/LICENSE"><img src="https://img.shields.io/github/license/felixgeelhaar/scout?style=flat-square" alt="License"></a>
   <a href="https://github.com/felixgeelhaar/scout/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/felixgeelhaar/scout/ci.yml?style=flat-square&label=CI" alt="CI"></a>
   <a href="https://pkg.go.dev/github.com/felixgeelhaar/scout"><img src="https://img.shields.io/badge/go.dev-reference-007d9c?style=flat-square" alt="Go Reference"></a>
-  <img src="https://img.shields.io/badge/coverage-54%25-yellow?style=flat-square" alt="Coverage">
+  <img src="https://img.shields.io/badge/coverage-55%25-yellow?style=flat-square" alt="Coverage">
   <img src="docs/nox-badge.svg?v=2" alt="Security">
 </p>
 
