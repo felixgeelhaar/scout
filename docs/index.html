@@ -498,12 +498,12 @@ a:focus-visible,button:focus-visible{
   <div class="container">
     <div class="hero-badge">
       <span>Browser automation for Go</span>
-      <code>v1.0.6</code>
+      <code>v1.2.0</code>
     </div>
     <img src="logo.svg" alt="Scout — Observer Eye logo" class="hero-logo" width="120" height="120">
     <h1>Scout</h1>
     <p class="hero-sub">
-      A <strong>single-binary MCP server</strong> that gives AI agents a browser. 57 tools for navigation, form filling, data extraction, screenshots, and DOM diffing — built on pure Chrome DevTools Protocol.
+      A <strong>single-binary MCP server</strong> that gives AI agents a browser. 66 tools for navigation, form filling, data extraction, screenshots, and DOM diffing — built on pure Chrome DevTools Protocol.
     </p>
     <div class="install-bar" role="region" aria-label="Install command">
       <code><span class="prompt" aria-hidden="true">$ </span>brew install felixgeelhaar/tap/scout</code>
@@ -549,7 +549,7 @@ a:focus-visible,button:focus-visible{
         <div class="icon icon-mcp" aria-hidden="true">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 7h14M7 7v10"/></svg>
         </div>
-        <h3>57-tool MCP server.</h3>
+        <h3>66-tool MCP server.</h3>
         <p>Single Go binary. No Node.js runtime, no Python interpreter. Just <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px">scout mcp serve</code> and your AI agent has a browser.</p>
       </div>
 
@@ -677,7 +677,7 @@ nextjs</code></pre>
     <div class="tab-panel" role="tabpanel" id="panel-mcp" aria-labelledby="tab-mcp">
       <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border);border-bottom:none;border-radius:var(--radius) var(--radius) 0 0;">
         <p style="color:var(--purple);font-weight:600;font-size:14px;margin-bottom:6px;">For giving AI assistants (Claude, Cursor, etc.) browser superpowers</p>
-        <p style="color:var(--text-dim);font-size:14px;line-height:1.5;">Use the MCP server to let your AI assistant browse the web, fill forms, extract data, and take screenshots — all via the standard Model Context Protocol. A single Go binary with 57 tools, zero runtime dependencies. Just install and add one line to your MCP config. The AI decides which tools to call; Scout handles the browser.</p>
+        <p style="color:var(--text-dim);font-size:14px;line-height:1.5;">Use the MCP server to let your AI assistant browse the web, fill forms, extract data, and take screenshots — all via the standard Model Context Protocol. A single Go binary with 66 tools, zero runtime dependencies. Just install and add one line to your MCP config. The AI decides which tools to call; Scout handles the browser.</p>
       </div>
       <pre style="border-radius:0 0 var(--radius) var(--radius);"><code><span class="cm"># Add to Claude Code</span>
 <span class="fl">$</span> claude mcp add scout -- scout mcp serve
@@ -692,22 +692,27 @@ nextjs</code></pre>
   }
 }
 
-<span class="cm"># 57 tools available:</span>
+<span class="cm"># 66 tools available:</span>
 <span class="cm">#</span>
-<span class="cm"># Navigation:  navigate, observe, observe_diff, observe_with_budget</span>
+<span class="cm"># Navigation:  navigate, observe, observe_diff, observe_with_budget,</span>
+<span class="cm">#              hybrid_observe</span>
 <span class="cm"># Interaction: click, click_label, type, hover, double_click,</span>
 <span class="cm">#              right_click, select_option, scroll_to, scroll_by,</span>
-<span class="cm">#              focus, drag_drop, dispatch_event</span>
+<span class="cm">#              focus, drag_drop, dispatch_event,</span>
+<span class="cm">#              select_by_prompt, batch, find_by_coordinates</span>
 <span class="cm"># Forms:       fill_form, fill_form_semantic, discover_form</span>
 <span class="cm"># Extraction:  extract, extract_all, extract_table,</span>
 <span class="cm">#              markdown, readable_text, accessibility_tree</span>
 <span class="cm"># Capture:     screenshot, annotated_screenshot, pdf</span>
 <span class="cm"># Network:     enable_network_capture, network_requests</span>
 <span class="cm"># Tabs:        open_tab, switch_tab, close_tab, list_tabs</span>
+<span class="cm"># Frames:      switch_to_frame, switch_to_main_frame</span>
 <span class="cm"># Frameworks:  wait_spa, detect_frameworks,</span>
 <span class="cm">#              component_state, app_state</span>
 <span class="cm"># Playback:    start_recording, stop_recording,</span>
 <span class="cm">#              save_playbook, replay_playbook</span>
+<span class="cm"># Tracing:     start_trace, stop_trace</span>
+<span class="cm"># Performance: web_vitals</span>
 <span class="cm"># Utility:     has_element, wait_for, configure</span></code></pre>
     </div>
   </div>
@@ -754,6 +759,8 @@ nextjs</code></pre>
         <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Remote CDP</strong> for cloud browsers</span></div>
         <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Table extraction</strong> to structured data</span></div>
         <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>PDF generation</strong> and screenshots</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Shadow DOM piercing</strong> with flattened cache</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Iframe switching</strong> for nested content</span></div>
       </div>
     </div>
 
@@ -770,6 +777,11 @@ nextjs</code></pre>
         <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Persistent profiles</strong> (cookies + storage)</span></div>
         <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Screenshot auto-compress</strong> for LLMs</span></div>
         <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>5-level content</strong> distillation</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>NL selectors</strong> by prompt text</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Vision hybrid</strong> mode with bounding boxes</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Batch operations</strong> for multi-action</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Trace export</strong> to zip files</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Web vitals</strong> LCP/CLS/INP extraction</span></div>
       </div>
     </div>
 
@@ -786,6 +798,9 @@ nextjs</code></pre>
         <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Resource blocking</strong> (images, fonts)</span></div>
         <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Viewport</strong> and slow motion</span></div>
         <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Screenshot on error</strong></span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Stealth v2</strong> canvas/audio/WebRTC noise</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>UA rotation</strong> with 27 realistic agents</span></div>
+        <div class="feat-item"><span class="check" aria-hidden="true">+</span><span><strong>Human delay</strong> randomized timing</span></div>
       </div>
     </div>
 
@@ -817,7 +832,7 @@ nextjs</code></pre>
 
       <div class="arch-layer">
         <div class="arch-box arch-l1">CLI<br><span style="font-weight:400;font-size:11px;opacity:.7">scout observe / screenshot / extract</span></div>
-        <div class="arch-box arch-l1">MCP Server<br><span style="font-weight:400;font-size:11px;opacity:.7">57 tools via stdio</span></div>
+        <div class="arch-box arch-l1">MCP Server<br><span style="font-weight:400;font-size:11px;opacity:.7">66 tools via stdio</span></div>
       </div>
       <div class="arch-arrow" aria-hidden="true">|</div>
 

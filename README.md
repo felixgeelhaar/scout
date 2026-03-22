@@ -2,7 +2,7 @@
 
 AI-powered browser automation for Go. Pure CDP over WebSocket — no rod, no chromedp, no Node.js.
 
-A single `scout` binary gives you a full CLI, a 57-tool MCP server, and a Go library with Gin-like middleware composition.
+A single `scout` binary gives you a full CLI, a 66-tool MCP server, and a Go library with Gin-like middleware composition.
 
 ```bash
 brew install felixgeelhaar/tap/scout
@@ -38,7 +38,7 @@ go install github.com/felixgeelhaar/scout/cmd/scout@latest
 go get github.com/felixgeelhaar/scout
 ```
 
-## MCP Server — 57 Tools
+## MCP Server — 66 Tools
 
 Single binary, zero runtime dependencies. Configure in any MCP client:
 
@@ -64,8 +64,12 @@ claude mcp add scout -- scout mcp serve           # Claude Code
 | **Frameworks** | `wait_spa`, `detect_frameworks`, `component_state`, `app_state` |
 | **Playback** | `start_recording`, `stop_recording`, `save_playbook`, `replay_playbook` |
 | **Smart Helpers** | `dismiss_cookies`, `check_readiness`, `suggest_selectors`, `session_history` |
+| **Vision** | `hybrid_observe`, `find_by_coordinates` |
+| **Batch** | `execute_batch` |
+| **Iframe** | `switch_to_frame`, `switch_to_main_frame` |
+| **Trace** | `start_trace`, `stop_trace` |
 | **Diagnostics** | `detect_dialog`, `detect_auth_wall`, `console_errors`, `compare_tabs`, `upload_file` |
-| **Utility** | `has_element`, `wait_for`, `configure` |
+| **Utility** | `has_element`, `wait_for`, `configure`, `web_vitals`, `select_by_prompt` |
 
 All tools have MCP annotations (`ReadOnly`, `OpenWorld`, `ClosedWorld`, `Idempotent`) for smart auto-approval. Read-only tools like `observe`, `extract`, and `screenshot` run without permission prompts.
 
@@ -211,10 +215,16 @@ scout/
 │   ├── interact.go                    # Hover, DragDrop, SelectOption, ScrollTo
 │   ├── profile.go                     # CaptureProfile, ApplyProfile, SaveProfile
 │   ├── selector.go                    # Playwright :text() selector translation
-│   └── budget.go                      # ObserveWithBudget, EstimateTokens
+│   ├── budget.go                      # ObserveWithBudget, EstimateTokens
+│   ├── nlselect.go                    # SelectByPrompt, fuzzy NL element matching
+│   ├── batch.go                       # ExecuteBatch, sequential multi-action
+│   ├── vision.go                      # HybridObserve, FindByCoordinates
+│   ├── trace.go                       # StartTrace, StopTrace, action tracing
+│   ├── iframe.go                      # SwitchToFrame, SwitchToMainFrame
+│   └── vitals.go                      # WebVitals (LCP/CLS/INP)
 ├── internal/cdp/                      # WebSocket CDP client (context-aware)
 ├── internal/launcher/                 # Chrome process management
-├── cmd/scout/                         # CLI + MCP server (57 tools)
+├── cmd/scout/                         # CLI + MCP server (66 tools)
 └── docs/                              # Landing page (GitHub Pages)
 ```
 

@@ -59,6 +59,14 @@ The root `browse` package follows Gin's patterns — `Engine` manages browser li
 - Page readiness: `agent/readiness.go` scores 0-100 based on readyState, pending images, skeletons, spinners.
 - Session history: `agent/history.go` ring buffer of last 20 actions, appended in Navigate/Click/Type via `addHistory`.
 - CLI watch/pipe/record in `cmd/scout/watch.go` — watch uses ObserveDiff polling, pipe reuses one session across URLs, record uses StartRecordingPlaybook.
+- `agent/nlselect.go`: `SelectByPrompt` uses JS fuzzy text matching against interactive elements. Falls back from `resolveSelector` when input looks like natural language.
+- `agent/batch.go`: `ExecuteBatch` acquires mutex once, runs multiple actions sequentially. Uses internal helpers (`batchClick`, `batchType`) to avoid re-locking.
+- `agent/vision.go`: `HybridObserve` returns clean screenshot + element bounding boxes. `FindByCoordinates` does point-in-rect hit test.
+- `agent/trace.go`: `StartTrace`/`StopTrace` capture before/after screenshots per action, export as zip with `trace.json` + `screenshots/` + `network.json`.
+- `agent/iframe.go`: `SwitchToFrame` gets iframe execution context via `Page.createIsolatedWorld`. `SwitchToMainFrame` resets.
+- `agent/vitals.go`: `WebVitals` extracts LCP/CLS/INP via PerformanceObserver API.
+- Stealth v2 adds canvas/audio fingerprint noise, WebRTC leak prevention, UA rotation.
+- `QuerySelectorPiercing` now uses `DOM.getFlattenedDocument` cache with `pierce:true`.
 
 **Screenshot compression:** `ScreenshotWithOptions` with `MaxSize` set progressively re-captures as JPEG with lower quality (80→60→40→20) and smaller scale (1.0→0.75→0.5→0.25) until the image fits under the byte limit. `agent.Session.Screenshot()` defaults to a 5MB limit.
 
