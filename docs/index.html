@@ -503,10 +503,10 @@ a:focus-visible,button:focus-visible{
     <img src="logo.svg" alt="Scout — Observer Eye logo" class="hero-logo" width="120" height="120">
     <h1>Scout</h1>
     <p class="hero-sub">
-      <strong>Gin-like browser automation</strong> with pure CDP, agent-optimized APIs, and a single-binary MCP server. No rod, no chromedp, no Node.js.
+      A <strong>single-binary MCP server</strong> with 57 tools for AI agents. Pure CDP, agent-optimized APIs, and Gin-like middleware. No Node.js, no Python.
     </p>
     <div class="install-bar" role="region" aria-label="Install command">
-      <code><span class="prompt" aria-hidden="true">$ </span>go get github.com/felixgeelhaar/scout</code>
+      <code><span class="prompt" aria-hidden="true">$ </span>brew install felixgeelhaar/tap/scout</code>
       <button class="copy-btn" onclick="copyInstall(this)" aria-label="Copy install command">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
       </button>
@@ -854,30 +854,13 @@ nextjs</code></pre>
   <div class="container">
     <p class="section-label">Get started</p>
     <h2 class="section-title">Install Scout.</h2>
-    <p class="section-desc">As a Go library, a CLI binary, or an MCP server for your AI agent.</p>
+    <p class="section-desc">Install the binary, connect to your AI agent, and start browsing. Go library also available.</p>
 
     <div class="install-grid">
 
       <div class="install-card">
-        <h3>Go Library</h3>
-        <pre><code><span class="fl">$</span> go get github.com/felixgeelhaar/scout</code></pre>
-      </div>
-
-      <div class="install-card">
-        <h3>Homebrew <span class="badge">macOS / Linux</span></h3>
+        <h3>Homebrew <span class="badge">recommended</span></h3>
         <pre><code><span class="fl">$</span> brew install felixgeelhaar/tap/scout</code></pre>
-      </div>
-
-      <div class="install-card">
-        <h3>Binary</h3>
-        <pre><code><span class="fl">$</span> curl -fsSL https://raw.githubusercontent.com/\
-  felixgeelhaar/scout/main/install.sh | bash</code></pre>
-      </div>
-
-      <div class="install-card">
-        <h3>Go Install <span class="badge">CLI</span></h3>
-        <pre><code><span class="fl">$</span> go install github.com/felixgeelhaar/\
-  scout/cmd/scout@latest</code></pre>
       </div>
 
       <div class="install-card">
@@ -895,6 +878,23 @@ nextjs</code></pre>
     }
   }
 }</code></pre>
+      </div>
+
+      <div class="install-card">
+        <h3>Binary <span class="badge">any platform</span></h3>
+        <pre><code><span class="fl">$</span> curl -fsSL https://raw.githubusercontent.com/\
+  felixgeelhaar/scout/main/install.sh | bash</code></pre>
+      </div>
+
+      <div class="install-card">
+        <h3>Go Library <span class="badge">developers</span></h3>
+        <pre><code><span class="fl">$</span> go get github.com/felixgeelhaar/scout</code></pre>
+      </div>
+
+      <div class="install-card">
+        <h3>Go Install <span class="badge">CLI</span></h3>
+        <pre><code><span class="fl">$</span> go install github.com/felixgeelhaar/\
+  scout/cmd/scout@latest</code></pre>
       </div>
 
     </div>
@@ -922,7 +922,7 @@ nextjs</code></pre>
 <script>
 // Copy install command
 function copyInstall(btn){
-  var text='go get github.com/felixgeelhaar/scout';
+  var text='brew install felixgeelhaar/tap/scout';
   navigator.clipboard.writeText(text).then(function(){
     btn.classList.add('copied');
     btn.setAttribute('aria-label','Copied!');
