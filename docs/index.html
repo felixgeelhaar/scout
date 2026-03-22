@@ -537,7 +537,7 @@ a:focus-visible,button:focus-visible{
         <div class="icon icon-mcp" aria-hidden="true">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 7h14M7 7v10"/></svg>
         </div>
-        <h3>46-tool MCP server.</h3>
+        <h3>50-tool MCP server.</h3>
         <p>Single Go binary. No Node.js runtime, no Python interpreter. Just <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px">scout mcp serve</code> and your AI agent has a browser.</p>
       </div>
 
@@ -665,7 +665,7 @@ nextjs</code></pre>
     <div class="tab-panel" role="tabpanel" id="panel-mcp" aria-labelledby="tab-mcp">
       <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border);border-bottom:none;border-radius:var(--radius) var(--radius) 0 0;">
         <p style="color:var(--purple);font-weight:600;font-size:14px;margin-bottom:6px;">For giving AI assistants (Claude, Cursor, etc.) browser superpowers</p>
-        <p style="color:var(--text-dim);font-size:14px;line-height:1.5;">Use the MCP server to let your AI assistant browse the web, fill forms, extract data, and take screenshots — all via the standard Model Context Protocol. A single Go binary with 46 tools, zero runtime dependencies. Just install and add one line to your MCP config. The AI decides which tools to call; Scout handles the browser.</p>
+        <p style="color:var(--text-dim);font-size:14px;line-height:1.5;">Use the MCP server to let your AI assistant browse the web, fill forms, extract data, and take screenshots — all via the standard Model Context Protocol. A single Go binary with 50 tools, zero runtime dependencies. Just install and add one line to your MCP config. The AI decides which tools to call; Scout handles the browser.</p>
       </div>
       <pre style="border-radius:0 0 var(--radius) var(--radius);"><code><span class="cm"># Add to Claude Code</span>
 <span class="fl">$</span> claude mcp add scout -- scout mcp serve
@@ -680,7 +680,7 @@ nextjs</code></pre>
   }
 }
 
-<span class="cm"># 46 tools available:</span>
+<span class="cm"># 50 tools available:</span>
 <span class="cm">#</span>
 <span class="cm"># Navigation:  navigate, observe, observe_diff, observe_with_budget</span>
 <span class="cm"># Interaction: click, click_label, type, hover, double_click,</span>
@@ -805,7 +805,7 @@ nextjs</code></pre>
 
       <div class="arch-layer">
         <div class="arch-box arch-l1">CLI<br><span style="font-weight:400;font-size:11px;opacity:.7">scout observe / screenshot / extract</span></div>
-        <div class="arch-box arch-l1">MCP Server<br><span style="font-weight:400;font-size:11px;opacity:.7">46 tools via stdio</span></div>
+        <div class="arch-box arch-l1">MCP Server<br><span style="font-weight:400;font-size:11px;opacity:.7">50 tools via stdio</span></div>
       </div>
       <div class="arch-arrow" aria-hidden="true">|</div>
 

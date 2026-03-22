@@ -54,6 +54,11 @@ The root `browse` package follows Gin's patterns — `Engine` manages browser li
 - Multi-tab: `tabManager` tracks named pages. Default page becomes "default" tab when `OpenTab` is first called.
 - DOM diff classification: `classifyDiff()` categorizes mutations as modal_appeared, form_error, notification, loading_complete, etc.
 - Action cost: `estimateLinkCost`/`estimateButtonCost` tag elements as high/medium/low in Observe responses.
+- Cookie dismiss: `agent/cookies.go` tries 30+ CSS selectors then text-pattern matching on visible buttons.
+- Selector suggestions: `resolveSelector` in `agent/selector.go` auto-suggests similar elements on failure via `suggestSelectorsInternal`.
+- Page readiness: `agent/readiness.go` scores 0-100 based on readyState, pending images, skeletons, spinners.
+- Session history: `agent/history.go` ring buffer of last 20 actions, appended in Navigate/Click/Type via `addHistory`.
+- CLI watch/pipe/record in `cmd/scout/watch.go` — watch uses ObserveDiff polling, pipe reuses one session across URLs, record uses StartRecordingPlaybook.
 
 **Screenshot compression:** `ScreenshotWithOptions` with `MaxSize` set progressively re-captures as JPEG with lower quality (80→60→40→20) and smaller scale (1.0→0.75→0.5→0.25) until the image fits under the byte limit. `agent.Session.Screenshot()` defaults to a 5MB limit.
 

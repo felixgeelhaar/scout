@@ -2,7 +2,7 @@
 
 AI-powered browser automation for Go. Pure CDP over WebSocket — no rod, no chromedp, no Node.js.
 
-A single `scout` binary gives you a full CLI, a 46-tool MCP server, and a Go library with Gin-like middleware composition.
+A single `scout` binary gives you a full CLI, a 50-tool MCP server, and a Go library with Gin-like middleware composition.
 
 ```bash
 brew install felixgeelhaar/tap/scout
@@ -38,7 +38,7 @@ go install github.com/felixgeelhaar/scout/cmd/scout@latest
 go get github.com/felixgeelhaar/scout
 ```
 
-## MCP Server — 46 Tools
+## MCP Server — 50 Tools
 
 Single binary, zero runtime dependencies. Configure in any MCP client:
 
@@ -63,6 +63,7 @@ claude mcp add scout -- scout mcp serve           # Claude Code
 | **Tabs** | `open_tab`, `switch_tab`, `close_tab`, `list_tabs` |
 | **Frameworks** | `wait_spa`, `detect_frameworks`, `component_state`, `app_state` |
 | **Playback** | `start_recording`, `stop_recording`, `save_playbook`, `replay_playbook` |
+| **Smart Helpers** | `dismiss_cookies`, `check_readiness`, `suggest_selectors`, `session_history` |
 | **Utility** | `has_element`, `wait_for`, `configure` |
 
 All tools have MCP annotations (`ReadOnly`, `OpenWorld`, `ClosedWorld`, `Idempotent`) for smart auto-approval. Read-only tools like `observe`, `extract`, and `screenshot` run without permission prompts.
@@ -181,6 +182,9 @@ scout extract <url> <selector>        # extract text
 scout eval <url> <expression>         # run JavaScript
 scout form discover <url>             # discover form fields
 scout frameworks <url>                # detect frameworks
+scout watch <url> [--interval=5s]     # live-watch page changes
+scout pipe <command> [selector]       # batch process URLs from stdin
+scout record <url> [--output f]       # interactive recording → playbook
 scout mcp serve                       # start MCP server
 scout version                         # print version
 ```
@@ -193,7 +197,7 @@ scout/
 ├── page.go, selection.go              # CDP page & element interaction
 ├── recorder.go                        # Video recording (screencast → MP4/GIF)
 ├── middleware/                        # stealth, resilience, auth, network
-├── agent/                             # AI agent API (46 methods)
+├── agent/                             # AI agent API (50+ methods)
 │   ├── session.go                     # Session lifecycle, Navigate, Click, Type
 │   ├── observe.go, diff.go            # Observe, ObserveDiff, cost estimation
 │   ├── content.go                     # Markdown, ReadableText, AccessibilityTree
@@ -209,7 +213,7 @@ scout/
 │   └── budget.go                      # ObserveWithBudget, EstimateTokens
 ├── internal/cdp/                      # WebSocket CDP client (context-aware)
 ├── internal/launcher/                 # Chrome process management
-├── cmd/scout/                         # CLI + MCP server (46 tools)
+├── cmd/scout/                         # CLI + MCP server (50 tools)
 └── docs/                              # Landing page (GitHub Pages)
 ```
 

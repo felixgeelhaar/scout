@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-03-22
+
+### Added
+- Cookie consent auto-dismiss: `dismiss_cookies` tries 30+ selectors and text patterns
+- Page readiness signals: `check_readiness` returns 0-100 score with pending XHR/images/skeleton/spinner detection
+- Selector suggestions: when a selector fails, returns 3 closest matching elements automatically
+- Session history: `session_history` returns last N actions for conversation-aware context
+- `scout watch <url>`: live-watch page changes with classified DOM diffs at configurable intervals
+- `scout pipe <command>`: batch process URLs from stdin (extract, observe, markdown, screenshot, frameworks)
+- `scout record <url>`: interactive recording — opens visible browser, saves actions as playbook JSON
+
 ## [0.8.0] - 2026-03-21
 
 ### Added
