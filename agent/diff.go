@@ -110,7 +110,7 @@ func (s *Session) harvestMutations() (*DOMDiff, error) {
 
 	var rawMutations []map[string]any
 	if err := json.Unmarshal([]byte(str), &rawMutations); err != nil {
-		return &DOMDiff{HasDiff: false}, nil
+		return &DOMDiff{HasDiff: false}, nil //nolint:nilerr // malformed mutation JSON is expected, return empty diff
 	}
 
 	diff := &DOMDiff{}
