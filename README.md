@@ -1,6 +1,17 @@
-# Scout
+<p align="center">
+  <img src="docs/logo-400.png" alt="Scout" width="160">
+</p>
 
-AI-powered browser automation for Go. Pure CDP over WebSocket — no rod, no chromedp, no Node.js.
+<h1 align="center">Scout</h1>
+
+<p align="center">AI-powered browser automation for Go. Pure CDP over WebSocket — no rod, no chromedp, no Node.js.</p>
+
+<p align="center">
+  <a href="https://github.com/felixgeelhaar/scout/releases"><img src="https://img.shields.io/github/v/release/felixgeelhaar/scout?style=flat-square&color=3b82f6" alt="Release"></a>
+  <a href="https://github.com/felixgeelhaar/scout/blob/main/LICENSE"><img src="https://img.shields.io/github/license/felixgeelhaar/scout?style=flat-square" alt="License"></a>
+  <a href="https://github.com/felixgeelhaar/scout/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/felixgeelhaar/scout/ci.yml?style=flat-square&label=CI" alt="CI"></a>
+  <a href="https://pkg.go.dev/github.com/felixgeelhaar/scout"><img src="https://img.shields.io/badge/go.dev-reference-007d9c?style=flat-square" alt="Go Reference"></a>
+</p>
 
 A single `scout` binary gives you a full CLI, a 66-tool MCP server, and a Go library with Gin-like middleware composition.
 

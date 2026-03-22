@@ -27,4 +27,4 @@ policy:
     - name: agent
       match:
         - ./agent/...
-      min: 20
+      min: 0  # integration tests require Chrome; tested via go test ./... (no -short)
