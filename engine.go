@@ -72,6 +72,21 @@ func (e *Engine) NewPage() (*Page, error) {
 	return e.NewPageAt("about:blank")
 }
 
+// ExistingPage attaches to an existing browser page (e.g. the initial about:blank tab).
+// Returns nil if no existing page target is found.
+func (e *Engine) ExistingPage() (*Page, error) {
+	targets, err := e.conn.GetTargets()
+	if err != nil {
+		return nil, fmt.Errorf("browse: failed to get targets: %w", err)
+	}
+	for _, t := range targets {
+		if t.Type == "page" {
+			return newPage(e.conn, t.TargetID, e.opts.timeout, URLValidator{AllowPrivateIPs: e.opts.allowPrivateIPs})
+		}
+	}
+	return nil, nil
+}
+
 // NewPageAt creates a new browser page/tab and navigates directly to the URL.
 // Faster than NewPage + Navigate because Chrome loads the URL during target creation.
 func (e *Engine) NewPageAt(url string) (*Page, error) {

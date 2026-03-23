@@ -22,6 +22,7 @@ package browse
 type Browser interface {
 	NewPage() (*Page, error)
 	NewPageAt(url string) (*Page, error)
+	ExistingPage() (*Page, error)
 	Close() error
 }
 
