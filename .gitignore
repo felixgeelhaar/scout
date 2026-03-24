@@ -34,3 +34,10 @@ findings.json
 
 # Claude Code
 .claude/
+
+# Relicta release state
+.relicta/
+
+# Frontend build artifacts
+.vite/
+ui/tsconfig.tsbuildinfo
