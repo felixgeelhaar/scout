@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-scout is a Gin-like browser automation library for Go using a pure Chrome DevTools Protocol (CDP) implementation over WebSocket. No rod, no chromedp. It has two API layers: a core `browse` package (Engine/Context/Group/HandlerFunc for developers) and an `agent` package (Session-based, structured-output API for AI agents). Includes an MCP server binary at `cmd/scout`.
+scout is a Gin-like browser automation library for Go using a pure Chrome DevTools Protocol (CDP) implementation over WebSocket. No rod, no chromedp. It has two API layers: a core `browse` package (Engine/Context/Group/HandlerFunc for developers) and an `agent` package (Session-based, structured-output API for AI agents). Includes an MCP server binary at `cmd/scout` and a conversational browser UI at `cmd/scout ui serve`.
 
 ## Commands
 
@@ -27,13 +27,21 @@ make cover-check   # runs tests + coverctl policy enforcement
 # Pre-commit hook (gofmt, vet, lint, unit tests, coverctl, nox baseline)
 make hooks         # install
 bash scripts/pre-commit.sh  # run manually
+
+# AG-UI server (conversational browser UI)
+scout ui serve --provider=ollama --model=mistral   # local LLM
+scout ui serve --provider=claude                    # Claude (needs ANTHROPIC_API_KEY)
+scout ui serve --provider=openai                    # OpenAI (needs OPENAI_API_KEY)
+cd ui && npm install && npm run dev                 # Vue frontend at :3000
 ```
 
 ## Architecture
 
-**Two API layers, one CDP engine:**
+**Three interfaces, one CDP engine:**
 
 The root `browse` package follows Gin's patterns — `Engine` manages browser lifecycle, `Context` carries page state through a `HandlerFunc` middleware chain, `Group` organizes tasks with shared middleware, `Selection`/`SelectionAll` wrap DOM elements. The `agent` package wraps all of this into a single `Session` type with structured JSON-serializable responses, auto-wait, content distillation, and mutex-protected concurrency safety.
+
+The `internal/agui` package adds a third interface: an AG-UI protocol HTTP server (`scout ui serve`) that streams SSE events to a Vue frontend. An LLM (Claude, OpenAI, or Ollama) interprets user messages and calls scout tools via an agentic loop. Browser state (URL, title, screenshot) streams to the frontend as JSON Patch deltas.
 
 **CDP data flow:**
 
@@ -69,6 +77,17 @@ The root `browse` package follows Gin's patterns — `Engine` manages browser li
 - `QuerySelectorPiercing` now uses `DOM.getFlattenedDocument` cache with `pierce:true`.
 
 **Screenshot compression:** `ScreenshotWithOptions` with `MaxSize` set progressively re-captures as JPEG with lower quality (80→60→40→20) and smaller scale (1.0→0.75→0.5→0.25) until the image fits under the byte limit. `agent.Session.Screenshot()` defaults to a 5MB limit.
+
+**AG-UI server (`internal/agui/`):**
+
+- `server.go`: HTTP server with CORS, POST `/` handler, health check at `/health`.
+- `handler.go`: Agentic loop — LLM → tool calls → `ExecuteTool` → `STATE_DELTA` → repeat until text-only response. Max 10 tool loops per run.
+- `events.go`: Self-contained AG-UI SSE encoder (no SDK dependency). 14 event types.
+- `tools.go`: `CuratedTools()` (20 tools for large models) and `CoreTools()` (6 tools for small/local models like Ollama). `ExecuteTool` maps tool names to `agent.Session` methods.
+- `llm_claude.go` / `llm_openai.go`: Streaming LLM providers. OpenAI provider works with Ollama, Groq, Together, etc.
+- `sessions.go`: Thread→Session map with 10-minute idle cleanup. One browser per thread.
+- `state.go`: `BrowserState` struct + `Diff()` for JSON Patch (RFC 6902) delta generation.
+- `ui/`: Vue 3 + Vite frontend. `useAgentStream` composable consumes raw SSE. Zero framework deps beyond Vue.
 
 ## Key Dependencies
 

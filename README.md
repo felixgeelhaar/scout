@@ -33,6 +33,10 @@ scout frameworks https://react.dev          # detect React, Vue, etc.
 
 # MCP Server — give AI agents browser superpowers
 claude mcp add scout -- scout mcp serve
+
+# Browser UI — conversational browser automation
+scout ui serve --provider=ollama --model=mistral
+cd ui && npm install && npm run dev  # open http://localhost:3000
 ```
 
 ## Install
@@ -95,6 +99,29 @@ Agent: configure(headless: false)   → browser window appears
 Agent: navigate("https://...")       → watch it work
 Agent: configure(headless: true)     → back to headless
 ```
+
+## Browser UI
+
+A conversational browser automation interface. Type natural language, watch the browser respond in real-time.
+
+```bash
+# Start the AG-UI server (Go backend)
+scout ui serve --provider=ollama --model=mistral    # local, no API key
+scout ui serve --provider=claude                     # needs ANTHROPIC_API_KEY
+scout ui serve --provider=openai --model=gpt-4o     # needs OPENAI_API_KEY
+scout ui serve --provider=groq --base-url=https://api.groq.com/openai --model=llama-3.3-70b-versatile
+
+# Start the Vue frontend
+cd ui && npm install && npm run dev                  # http://localhost:3000
+```
+
+The UI streams AG-UI protocol events over SSE:
+- **Chat panel** with markdown rendering and quick-action pills
+- **Live browser viewport** with screenshot streaming and URL bar
+- **Activity timeline** showing tool calls in real-time
+- **Stop button** to cancel mid-stream
+
+The Go server handles the agentic loop: LLM decides which scout tools to call, executes them, streams browser state deltas back to the frontend. Supports any OpenAI-compatible endpoint via `--base-url`.
 
 ## Agent Package
 
