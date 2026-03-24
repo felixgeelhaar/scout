@@ -42,6 +42,13 @@ func main() {
 		}
 		serveMCP()
 
+	case "ui":
+		if len(args) < 2 || args[1] != "serve" {
+			fmt.Fprintln(os.Stderr, "Usage: scout ui serve [--provider=claude] [--model=...] [--port=4200]")
+			os.Exit(1)
+		}
+		serveUI(args[2:])
+
 	case "navigate":
 		requireArgs(args, 1, "scout navigate <url>")
 		runOnePage(args[1], parseFlags(args[2:]), func(s *cliSession) {
@@ -197,6 +204,7 @@ Commands:
   pipe <command> [selector]         Process URLs from stdin (one per line)
   record <url> [--output=file]      Interactive recording → playbook JSON
   mcp serve                         Start the MCP server (stdio transport)
+  ui serve [flags]                  Start the AG-UI server (browser automation UI)
   version                           Print version information
 
 Global flags:
