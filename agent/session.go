@@ -143,50 +143,34 @@ func (s *Session) Navigate(url string) (*PageResult, error) {
 
 	start, before := s.traceBeforeAction("navigate", "", "", url)
 
-	// First navigate: reuse the initial about:blank tab instead of opening a new one.
-	// Subsequent navigates: close existing page and create fresh at target URL.
+	// Close existing page (or the initial about:blank tab) and create fresh at target URL.
+	// NewPageAt tells Chrome to create the target directly at the URL, which is more
+	// reliable than attaching to an existing blank page and navigating it.
 	if s.page != nil {
 		_ = s.page.Close()
-		page, err := s.browser.NewPageAt(url)
-		if err != nil {
-			s.traceAfterAction(start, before, "navigate", "", "", url, err)
-			return nil, fmt.Errorf("failed to navigate to %s: %w", url, err)
-		}
-		if s.stealth {
-			s.applyStealthPatches(page)
-		}
-		s.page = page
 	} else {
-		// Try to attach to the existing blank page Chrome opened at launch
-		page, err := s.browser.ExistingPage()
-		if err != nil || page == nil {
-			// Fallback: create a new page at the target URL
-			var createErr error
-			page, createErr = s.browser.NewPageAt(url)
-			if createErr != nil {
-				s.traceAfterAction(start, before, "navigate", "", "", url, createErr)
-				return nil, fmt.Errorf("failed to navigate to %s: %w", url, createErr)
-			}
-		} else {
-			// Navigate the existing page to the target URL
-			if navErr := page.Navigate(url); navErr != nil {
-				s.traceAfterAction(start, before, "navigate", "", "", url, navErr)
-				return nil, fmt.Errorf("failed to navigate to %s: %w", url, navErr)
-			}
+		// Close the initial about:blank tab Chrome opened at launch
+		if blank, err := s.browser.ExistingPage(); err == nil && blank != nil {
+			_ = blank.Close()
 		}
-		if s.stealth {
-			s.applyStealthPatches(page)
-		}
-		s.page = page
 	}
+	page, err := s.browser.NewPage()
+	if err != nil {
+		s.traceAfterAction(start, before, "navigate", "", "", url, err)
+		return nil, fmt.Errorf("failed to navigate to %s: %w", url, err)
+	}
+	if s.stealth {
+		s.applyStealthPatches(page)
+	}
+	s.page = page
 	s.diffInstalled = false
 	s.frameID = ""
 	s.frameContextID = 0
 
-	// Wait for page to fully load
-	if err := s.page.WaitLoad(); err != nil {
-		// Non-fatal — page may be interactive but not fully loaded
-		_ = err
+	// Navigate explicitly so we attach event listeners before the load fires
+	if err := page.Navigate(url); err != nil {
+		s.traceAfterAction(start, before, "navigate", "", "", url, err)
+		return nil, fmt.Errorf("failed to navigate to %s: %w", url, err)
 	}
 
 	s.traceAfterAction(start, before, "navigate", "", "", url, nil)

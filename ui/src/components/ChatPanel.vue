@@ -11,6 +11,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   send: [text: string];
+  stop: [];
   clear: [];
 }>();
 
@@ -165,28 +166,26 @@ watch(
           placeholder="Ask Scout..."
           autofocus
         />
+        <!-- Stop button (while running) -->
         <button
+          v-if="isRunning"
+          type="button"
+          class="shrink-0 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-500 transition-colors"
+          @click="emit('stop')"
+        >
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="6" width="12" height="12" rx="1" />
+          </svg>
+        </button>
+        <!-- Send button -->
+        <button
+          v-else
           type="submit"
-          :disabled="isRunning || !input.trim()"
+          :disabled="!input.trim()"
           class="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
-          <svg
-            v-if="!isRunning"
-            class="w-3.5 h-3.5"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-          </svg>
-          <svg
-            v-else
-            class="w-3.5 h-3.5 animate-spin"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-          >
-            <path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93" />
           </svg>
         </button>
       </form>

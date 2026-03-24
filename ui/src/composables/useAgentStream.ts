@@ -42,11 +42,21 @@ export function useAgentStream(endpoint = "/api") {
     }
   }
 
+  let abortController: AbortController | null = null;
+
+  function stop() {
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
+    }
+  }
+
   async function send(text: string) {
     if (isRunning.value) return;
 
     error.value = null;
     isRunning.value = true;
+    abortController = new AbortController();
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -86,6 +96,7 @@ export function useAgentStream(endpoint = "/api") {
           Accept: "text/event-stream",
         },
         body: JSON.stringify(payload),
+        signal: abortController?.signal,
       });
 
       if (!resp.ok) {
@@ -125,8 +136,13 @@ export function useAgentStream(endpoint = "/api") {
         }
       }
     } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e);
+      if (e instanceof DOMException && e.name === "AbortError") {
+        // User stopped the request — not an error
+      } else {
+        error.value = e instanceof Error ? e.message : String(e);
+      }
     } finally {
+      abortController = null;
       if (currentMsgId) {
         messages.value = messages.value.map((m) =>
           m.id === currentMsgId
@@ -283,6 +299,7 @@ export function useAgentStream(endpoint = "/api") {
     isNavigating,
     error,
     send,
+    stop,
     clear,
   };
 }
