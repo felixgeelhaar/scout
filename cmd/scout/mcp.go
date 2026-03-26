@@ -51,7 +51,10 @@ type ExtractTableInput struct {
 }
 
 type ScreenshotInput struct {
-	URL string `json:"url,omitempty" jsonschema:"description=Optional URL to navigate to before taking screenshot"`
+	URL      string `json:"url,omitempty" jsonschema:"description=Optional URL to navigate to before taking screenshot"`
+	Quality  int    `json:"quality,omitempty" jsonschema:"description=JPEG quality 1-100. Forces JPEG format. Lower = smaller file. Default auto-compresses to fit 200KB."`
+	MaxWidth int    `json:"max_width,omitempty" jsonschema:"description=Maximum image width in pixels. Downscales proportionally. Good values: 800 or 1024."`
+	FullPage bool   `json:"full_page,omitempty" jsonschema:"description=Capture the entire scrollable page instead of just the viewport."`
 }
 
 type EvalInput struct {
@@ -201,7 +204,7 @@ type FindByCoordinatesInput struct {
 }
 
 type BatchInput struct {
-	Actions []agent.BatchAction `json:"actions" jsonschema:"required,description=Array of actions to execute. Each has action (click/type/fill_form_semantic/wait/scroll_to) plus selector/value/fields as needed."`
+	Actions []agent.BatchAction `json:"actions" jsonschema:"required,description=Array of actions to execute. Each has action (click/type/fill_form_semantic/wait/scroll_to/click_label) plus selector/value/label/fields as needed."`
 }
 
 type ObserveDiffResult struct {
@@ -486,7 +489,7 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 	// --- Batch ---
 
 	srv.Tool("batch").
-		Description("Execute multiple actions in a single call. Avoids repeated round-trips. Actions: click, type, fill_form_semantic, wait, scroll_to. Continues on error.").
+		Description("Execute multiple actions in a single call. Avoids repeated round-trips. Actions: click, type, fill_form_semantic, wait, scroll_to, click_label. Continues on error.").
 		Handler(func(ctx context.Context, input BatchInput) (*agent.BatchResult, error) {
 			return s().ExecuteBatch(input.Actions)
 		})
@@ -539,23 +542,33 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 
 	srv.Tool("screenshot").
 		ReadOnly().
-		Description("Capture a PNG screenshot. Optionally pass url to navigate first. Auto-compressed for LLM contexts.").
+		Description("Capture a screenshot. Auto-compressed for LLM contexts (200KB). Use quality/max_width to control size. Returns base64 data URL.").
 		Handler(func(ctx context.Context, input ScreenshotInput) (string, error) {
 			if err := maybeNavigate(input.URL); err != nil {
 				return "", err
 			}
-			// Use aggressive compression for MCP — 200KB max to avoid blowing LLM context
 			page := s().Page()
 			if page == nil {
 				return "", fmt.Errorf("no page open")
 			}
-			data, err := page.ScreenshotWithOptions(browse.ScreenshotOptions{
-				MaxSize: 200 * 1024, // 200KB — ~2.5k tokens in base64
-			})
+			opts := browse.ScreenshotOptions{
+				MaxSize:  200 * 1024, // 200KB default — ~2.5k tokens in base64
+				FullPage: input.FullPage,
+				MaxWidth: input.MaxWidth,
+			}
+			if input.Quality > 0 {
+				opts.Format = "jpeg"
+				opts.Quality = input.Quality
+			}
+			data, err := page.ScreenshotWithOptions(opts)
 			if err != nil {
 				return "", err
 			}
-			return "data:image/png;base64," + base64.StdEncoding.EncodeToString(data), nil
+			mime := "image/png"
+			if opts.Format == "jpeg" {
+				mime = "image/jpeg"
+			}
+			return "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(data), nil
 		})
 
 	srv.Tool("annotated_screenshot").

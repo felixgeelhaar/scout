@@ -55,10 +55,18 @@ type Conn struct {
 	eventsMu  sync.RWMutex
 	closed    chan struct{}
 	isClosed  atomic.Bool
+	stopPing  chan struct{} // signals the keepalive goroutine to stop
 }
 
 // DefaultCallTimeout is the maximum time to wait for a CDP response.
 var DefaultCallTimeout = 30 * time.Second
+
+const (
+	// pingInterval is how often we send WebSocket pings to keep the connection alive.
+	pingInterval = 30 * time.Second
+	// pingTimeout is how long we wait for a pong before considering the connection dead.
+	pingTimeout = 60 * time.Second
+)
 
 // Dial connects to a CDP WebSocket endpoint.
 func Dial(url string) (*Conn, error) {
@@ -73,12 +81,20 @@ func Dial(url string) (*Conn, error) {
 	ws.SetReadLimit(64 * 1024 * 1024) // 64MB max message size
 
 	c := &Conn{
-		ws:      ws,
-		pending: make(map[int64]chan *Message),
-		events:  make(map[eventKey][]*handlerEntry),
-		closed:  make(chan struct{}),
+		ws:       ws,
+		pending:  make(map[int64]chan *Message),
+		events:   make(map[eventKey][]*handlerEntry),
+		closed:   make(chan struct{}),
+		stopPing: make(chan struct{}),
 	}
+
+	// Set pong handler to extend the read deadline on each pong received.
+	ws.SetPongHandler(func(string) error {
+		return ws.SetReadDeadline(time.Now().Add(pingTimeout))
+	})
+
 	go c.readLoop()
+	go c.pingLoop()
 	return c, nil
 }
 
@@ -192,7 +208,34 @@ func (c *Conn) Close() error {
 		return nil
 	}
 	close(c.closed)
+	close(c.stopPing)
 	return c.ws.Close()
+}
+
+// pingLoop sends periodic WebSocket pings to keep the connection alive.
+// Chrome's CDP WebSocket can drop idle connections; this prevents that.
+func (c *Conn) pingLoop() {
+	ticker := time.NewTicker(pingInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			c.wsMu.Lock()
+			err := c.ws.WriteControl(
+				websocket.PingMessage,
+				nil,
+				time.Now().Add(10*time.Second),
+			)
+			c.wsMu.Unlock()
+			if err != nil {
+				return // connection is dead, readLoop will handle cleanup
+			}
+		case <-c.stopPing:
+			return
+		case <-c.closed:
+			return
+		}
+	}
 }
 
 func (c *Conn) readLoop() {

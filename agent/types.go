@@ -216,6 +216,7 @@ type BatchAction struct {
 	Action   string            `json:"action"`
 	Selector string            `json:"selector,omitempty"`
 	Value    string            `json:"value,omitempty"`
+	Label    int               `json:"label,omitempty"`
 	Fields   map[string]string `json:"fields,omitempty"`
 }
 

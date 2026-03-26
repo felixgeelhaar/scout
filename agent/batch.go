@@ -54,6 +54,8 @@ func (s *Session) executeSingleAction(action BatchAction) error {
 		return s.page.WaitForSelector(action.Selector)
 	case "scroll_to":
 		return s.batchScrollTo(action.Selector)
+	case "click_label":
+		return s.batchClickLabel(action.Label)
 	default:
 		return fmt.Errorf("unknown batch action %q", action.Action)
 	}
@@ -90,11 +92,20 @@ func (s *Session) batchType(selector, text string) error {
 		const el = document.querySelector(%s);
 		if (!el) return false;
 		el.focus();
-		el.value = %s;
+		// Use native setter to trigger React/Vue/Angular synthetic event systems.
+		const proto = el instanceof HTMLSelectElement ? HTMLSelectElement.prototype
+			: el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype
+			: HTMLInputElement.prototype;
+		const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value');
+		if (nativeSetter && nativeSetter.set) {
+			nativeSetter.set.call(el, %s);
+		} else {
+			el.value = %s;
+		}
 		el.dispatchEvent(new Event('input', {bubbles: true}));
 		el.dispatchEvent(new Event('change', {bubbles: true}));
 		return true;
-	})()`, selectorJSON, textJSON)
+	})()`, selectorJSON, textJSON, textJSON)
 
 	result, err := s.page.Evaluate(js)
 	if err != nil {
@@ -168,5 +179,40 @@ func (s *Session) batchScrollTo(selector string) error {
 	}
 
 	time.Sleep(300 * time.Millisecond)
+	return nil
+}
+
+func (s *Session) batchClickLabel(label int) error {
+	if label <= 0 {
+		return fmt.Errorf("click_label action requires a positive label number")
+	}
+
+	js := fmt.Sprintf(`(function() {
+		let idx = 0;
+		const selectors = 'a[href], button, input, textarea, select, [role="button"], [onclick], [tabindex]';
+		for (const el of document.querySelectorAll(selectors)) {
+			const rect = el.getBoundingClientRect();
+			if (rect.width < 5 || rect.height < 5) continue;
+			const style = window.getComputedStyle(el);
+			if (style.display === 'none' || style.visibility === 'hidden') continue;
+			idx++;
+			if (idx === %d) {
+				el.click();
+				return true;
+			}
+		}
+		return false;
+	})()`, label)
+
+	result, err := s.page.Evaluate(js)
+	if err != nil {
+		return err
+	}
+	if b, ok := result.(bool); !ok || !b {
+		return fmt.Errorf("label %d not found", label)
+	}
+
+	_ = s.page.WaitStable(300 * time.Millisecond)
+	s.addHistory("click_label", "", "", fmt.Sprintf("%d", label))
 	return nil
 }

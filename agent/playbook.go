@@ -203,7 +203,11 @@ func (s *Session) executeAction(a Action, result *PlaybookResult) error {
 			if (!sel) return false;
 			for (const opt of sel.options) {
 				if (opt.text.trim() === %s || opt.value === %s) {
-					sel.value = opt.value;
+					const nativeSetter = Object.getOwnPropertyDescriptor(
+						HTMLSelectElement.prototype, 'value'
+					).set;
+					nativeSetter.call(sel, opt.value);
+					sel.dispatchEvent(new Event('input', {bubbles: true}));
 					sel.dispatchEvent(new Event('change', {bubbles: true}));
 					return true;
 				}

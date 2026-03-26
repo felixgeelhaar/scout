@@ -113,9 +113,15 @@ func (s *Session) SelectOption(selector, optionText string) (*ElementResult, err
 		if (!sel || sel.tagName !== 'SELECT') return null;
 		for (const opt of sel.options) {
 			if (opt.text.trim() === %s || opt.value === %s) {
-				sel.value = opt.value;
-				sel.dispatchEvent(new Event('change', {bubbles: true}));
+				// Use native setter to trigger React's synthetic event system.
+				// React overrides value properties; using the prototype setter
+				// ensures React detects the change and fires onChange.
+				const nativeSetter = Object.getOwnPropertyDescriptor(
+					HTMLSelectElement.prototype, 'value'
+				).set;
+				nativeSetter.call(sel, opt.value);
 				sel.dispatchEvent(new Event('input', {bubbles: true}));
+				sel.dispatchEvent(new Event('change', {bubbles: true}));
 				return JSON.stringify({value: opt.value, text: opt.text.trim()});
 			}
 		}
