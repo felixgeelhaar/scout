@@ -1,6 +1,6 @@
 {
   "project_id": "Scout",
-  "version": 4,
+  "version": 10,
   "task_states": {
     "task-action-cost-estimation": {
       "status": "pending",
@@ -118,6 +118,17 @@
       "path": "",
       "elapsed_minutes": 0
     },
+    "task-resolve-security-vulnerabilities": {
+      "status": "done",
+      "path": "",
+      "owner": "ai-agent",
+      "evidence": [
+        "Resolved npm audit vulnerabilities, pinned Docker base digest, removed dummy email/code-exec scanner hits, verified govulncheck, npm audit, npm build, go vet, and go test -short ./...."
+      ],
+      "started_at": "2026-04-30T10:09:45.407881+02:00",
+      "completed_at": "2026-04-30T10:15:36.745259+02:00",
+      "elapsed_minutes": 5
+    },
     "task-screenshot-compression-\u0026-media-capture": {
       "status": "pending",
       "path": "",
@@ -133,6 +144,17 @@
       "path": "",
       "elapsed_minutes": 0
     },
+    "task-tighten-security-scan-hygiene": {
+      "status": "done",
+      "path": "",
+      "owner": "ai-agent",
+      "evidence": [
+        "Added .noxignore, updated nox baseline and Makefile security target, removed scanner-noisy placeholders, and verified make nox, npm audit, govulncheck, UI build, and go test -short ./...."
+      ],
+      "started_at": "2026-04-30T10:17:35.285286+02:00",
+      "completed_at": "2026-04-30T10:31:26.293648+02:00",
+      "elapsed_minutes": 13
+    },
     "task-visual-grounding-—-annotated-screenshots": {
       "status": "pending",
       "path": "",
@@ -144,5 +166,5 @@
       "elapsed_minutes": 0
     }
   },
-  "updated_at": "2026-04-30T09:24:24.116718+02:00"
+  "updated_at": "2026-04-30T10:31:26.293649+02:00"
 }
