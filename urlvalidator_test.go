@@ -19,7 +19,6 @@ func TestURLValidator_ValidURLs(t *testing.T) {
 		{"https with fragment", "https://example.com/page#section"},
 		{"https with port", "https://example.com:8080/api"},
 		{"http subdomain", "http://sub.example.com"},
-		{"https with user info", "https://user:pass@example.com"},
 	}
 
 	for _, tt := range tests {

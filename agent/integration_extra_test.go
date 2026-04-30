@@ -937,13 +937,12 @@ func TestIntegrationFindByTextSelector(t *testing.T) {
 	}
 
 	// Verify the correct button was clicked.
-	val, err := s.Eval(`document.getElementById('output').textContent`)
+	val, err := s.Extract("#output")
 	if err != nil {
-		t.Fatalf("Eval: %v", err)
+		t.Fatalf("Extract: %v", err)
 	}
-	text, _ := val.(string)
-	if text != "clicked-cancel" {
-		t.Errorf("expected 'clicked-cancel', got %q", text)
+	if val.Text != "clicked-cancel" {
+		t.Errorf("expected 'clicked-cancel', got %q", val.Text)
 	}
 }
 

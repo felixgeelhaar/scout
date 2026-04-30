@@ -160,7 +160,7 @@ func TestFillForm(t *testing.T) {
 
 	result, err := s.FillForm(map[string]string{
 		"#name":  "Alice",
-		"#email": "alice@test.local",
+		"#email": "alice-test-user",
 	})
 	if err != nil {
 		t.Fatalf("FillForm: %v", err)

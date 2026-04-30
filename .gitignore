@@ -30,7 +30,8 @@ Thumbs.db
 
 # Nox scan artifacts
 findings.json
-.nox/
+.nox/*
+!.nox/baseline.json
 
 # Claude Code
 .claude/
@@ -40,4 +41,6 @@ findings.json
 
 # Frontend build artifacts
 .vite/
+ui/dist/
+ui/node_modules/
 ui/tsconfig.tsbuildinfo

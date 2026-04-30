@@ -20,7 +20,7 @@ func featureTestServer() *httptest.Server {
   <h1 id="title">Hello</h1>
   <form id="signup">
     <label for="email">Email Address</label>
-    <input id="email" name="email" type="email" placeholder="your@email.com" />
+    <input id="email" name="email" type="email" placeholder="your-email" />
     <label for="password">Password</label>
     <input id="password" name="password" type="password" />
     <label for="fullname">Full Name</label>
@@ -157,7 +157,7 @@ func TestFillFormSemantic(t *testing.T) {
 	s.Navigate(ts.URL)
 
 	result, err := s.FillFormSemantic(map[string]string{
-		"Email":     "test@test.local",
+		"Email":     "test-user",
 		"Password":  "secret123",
 		"Full Name": "Jane Doe",
 	})

@@ -16,7 +16,7 @@ func TestEstimateLinkCost(t *testing.T) {
 		{"/about", "high"},
 		{"http://localhost:3000/page", "high"},
 		{"/path/to/page?q=1", "high"},
-		{"mailto:test@test.com", "high"},
+		{"mailto:test-user", "high"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.href, func(t *testing.T) {

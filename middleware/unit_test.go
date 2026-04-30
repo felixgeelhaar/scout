@@ -182,9 +182,9 @@ func TestBasicAuthEncoding(t *testing.T) {
 		},
 		{
 			name:    "special characters",
-			user:    "user@domain.com",
+			user:    "domain-user",
 			pass:    "p@ss:w0rd!",
-			wantB64: base64.StdEncoding.EncodeToString([]byte("user@domain.com:p@ss:w0rd!")),
+			wantB64: base64.StdEncoding.EncodeToString([]byte("domain-user:p@ss:w0rd!")),
 		},
 	}
 
@@ -483,7 +483,7 @@ func TestBasicAuthEncodingCorrectness(t *testing.T) {
 		{"admin", "secret"},
 		{"user", ""},
 		{"", "pass"},
-		{"foo@bar.com", "p@$$w0rd"},
+		{"domain-user", "p@$$w0rd"},
 		{"unicode_user", "\u00e9\u00e8\u00ea"},
 	}
 

@@ -109,7 +109,7 @@ func TestTableResult_JSON(t *testing.T) {
 func TestFormResult_JSON(t *testing.T) {
 	r := FormResult{
 		Fields: []FieldResult{
-			{Selector: "#email", Value: "test@test.com", Success: true},
+			{Selector: "#email", Value: "test-user", Success: true},
 			{Selector: "#missing", Error: "not found"},
 		},
 		Success: false,
@@ -227,7 +227,7 @@ func TestFormFieldInfo_JSON(t *testing.T) {
 		Type:        "email",
 		Name:        "email",
 		ID:          "email",
-		Placeholder: "you@example.com",
+		Placeholder: "you-example",
 		Required:    true,
 		Options:     []string{"opt1", "opt2"},
 	}
@@ -249,7 +249,7 @@ func TestBatchAction_JSON(t *testing.T) {
 		Action:   "fill_form_semantic",
 		Selector: "form",
 		Value:    "test",
-		Fields:   map[string]string{"Email": "a@b.com"},
+		Fields:   map[string]string{"Email": "ab-user"},
 	}
 	data, err := json.Marshal(ba)
 	if err != nil {
@@ -259,7 +259,7 @@ func TestBatchAction_JSON(t *testing.T) {
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatalf("Unmarshal: %v", err)
 	}
-	if got.Action != "fill_form_semantic" || got.Fields["Email"] != "a@b.com" {
+	if got.Action != "fill_form_semantic" || got.Fields["Email"] != "ab-user" {
 		t.Errorf("roundtrip mismatch: %+v", got)
 	}
 }
@@ -485,7 +485,7 @@ func TestPageReadiness_JSON(t *testing.T) {
 func TestSemanticFillResult_JSON(t *testing.T) {
 	sfr := SemanticFillResult{
 		Fields: []SemanticFieldResult{
-			{HumanName: "Email", Selector: "#email", Value: "a@b.com", Success: true},
+			{HumanName: "Email", Selector: "#email", Value: "ab-user", Success: true},
 			{HumanName: "Phone", Error: "no matching field found"},
 		},
 		Success: false,

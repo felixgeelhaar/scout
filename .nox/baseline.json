@@ -2,94 +2,6 @@
   "schema_version": "1.0.0",
   "entries": [
     {
-      "fingerprint": "cfd12e1ab439c2bf17f6c0b018e44beda563ce7051c079f40ada6db2a4c544c6",
-      "rule_id": "DATA-001",
-      "file_path": "integration_test.go",
-      "severity": "medium",
-      "reason": "Test fixture email in integration_test.go, not real PII",
-      "created_at": "2026-03-21T08:49:58.462655Z"
-    },
-    {
-      "fingerprint": "3bbc0a05bfc7fa29a3761babf2e1e801bc7ab67d0f78f27c00fe01a88e86f9f3",
-      "rule_id": "DATA-001",
-      "file_path": "integration_test.go",
-      "severity": "medium",
-      "reason": "Test fixture email in integration_test.go, not real PII",
-      "created_at": "2026-03-21T08:49:58.493672Z"
-    },
-    {
-      "fingerprint": "e56affc74632e0f181768ae92ed4c1d008d28ce9c2c93995303179734e2cba91",
-      "rule_id": "DATA-001",
-      "file_path": "integration_test.go",
-      "severity": "medium",
-      "reason": "Test fixture email in integration_test.go, not real PII",
-      "created_at": "2026-03-21T08:49:58.533935Z"
-    },
-    {
-      "fingerprint": "551ad154604e1d345b1f5d75bcf44055592b639432b70d4ad4dd32f4ba0fbb6d",
-      "rule_id": "DATA-001",
-      "file_path": "README.md",
-      "severity": "medium",
-      "reason": "README example email, not real PII",
-      "created_at": "2026-03-21T10:31:35.712502Z"
-    },
-    {
-      "fingerprint": "a21502c0834c8955602892743032c73adbd5622a1a190c09941fb6cc231cbb28",
-      "rule_id": "DATA-001",
-      "file_path": "agent/features_test.go",
-      "severity": "medium",
-      "reason": "Test fixture email placeholder in HTML",
-      "created_at": "2026-03-21T10:31:38.441979Z"
-    },
-    {
-      "fingerprint": "b926d01d72a664c8202b678371e68c3c69f18841a340db6cb97266ef734e2b48",
-      "rule_id": "DATA-001",
-      "file_path": "agent/features_test.go",
-      "severity": "medium",
-      "reason": "Test fixture email in features_test.go",
-      "created_at": "2026-03-21T10:31:41.017227Z"
-    },
-    {
-      "fingerprint": "088837d010d9d042b832164536b36a25cf986e2304ca33aa084f43607e893ba4",
-      "rule_id": "DATA-001",
-      "file_path": "agent/session_test.go",
-      "severity": "medium",
-      "reason": "Test fixture email in session_test.go",
-      "created_at": "2026-03-21T10:31:43.6843Z"
-    },
-    {
-      "fingerprint": "d8563663c2860f6df67fbc42057cd553510c7cca6c14ed3ffe3326a2a8bddb96",
-      "rule_id": "DATA-001",
-      "file_path": "integration_test.go",
-      "severity": "medium",
-      "reason": "Test fixture email in integration_test.go",
-      "created_at": "2026-03-21T10:31:46.424472Z"
-    },
-    {
-      "fingerprint": "3cbce8bcc8692c92849fe1a75239ff6639291205bb3da96836080ed5120b66c0",
-      "rule_id": "DATA-001",
-      "file_path": "integration_test.go",
-      "severity": "medium",
-      "reason": "Test fixture email in integration_test.go",
-      "created_at": "2026-03-21T10:31:49.109118Z"
-    },
-    {
-      "fingerprint": "b849850f42ba215cad557c65cd0a19d4a370cae620ea56fe52c912309bb484ed",
-      "rule_id": "DATA-001",
-      "file_path": "integration_test.go",
-      "severity": "medium",
-      "reason": "Test fixture email in integration_test.go",
-      "created_at": "2026-03-21T10:31:51.354406Z"
-    },
-    {
-      "fingerprint": "ec2720498bac5f596dd177e9f182fec6d46c1716e83f24866108b6add00edc4c",
-      "rule_id": "SEC-163",
-      "file_path": "agent/features_test.go",
-      "severity": "medium",
-      "reason": "False positive: test WS URL not a secret key",
-      "created_at": "2026-03-21T10:31:52.707215Z"
-    },
-    {
       "fingerprint": "d1d2474ec412c4318cedbca10d1566e5593fe3a7d684ef96fc8871adb0de1e07",
       "rule_id": "SEC-629",
       "file_path": "middleware/stealth.go",
@@ -106,30 +18,6 @@
       "created_at": "2026-03-21T10:31:55.027884Z"
     },
     {
-      "fingerprint": "58cd20d89dcde95b10566f01b766f43757acedba3efd345486aa173a4b484bc9",
-      "rule_id": "SEC-163",
-      "file_path": ".nox/baseline.json",
-      "severity": "medium",
-      "reason": "False positive: SHA fingerprint in nox baseline.json, not a secret",
-      "created_at": "2026-03-21T11:07:02.39485Z"
-    },
-    {
-      "fingerprint": "52096ecf7ce68551ced7a47b9631b87808a3f5fecab7257af7fc5f1286734221",
-      "rule_id": "SEC-163",
-      "file_path": ".nox/baseline.json",
-      "severity": "medium",
-      "reason": "False positive: SHA fingerprint in nox baseline.json, not a secret",
-      "created_at": "2026-03-21T11:07:03.066038Z"
-    },
-    {
-      "fingerprint": "07287de05b15c871c94c82f1c35e2ac1c49ab4cfaba98eab4ed932624fbd103b",
-      "rule_id": "DATA-001",
-      "file_path": "README.md",
-      "severity": "medium",
-      "reason": "README example email, not real PII",
-      "created_at": "2026-03-21T11:48:09.991607Z"
-    },
-    {
       "fingerprint": "e69e961bc3ef0f4756a61f46ed4f02d64346fa08bf320f479d2a0ba62cda8260",
       "rule_id": "IAC-314",
       "file_path": ".github/workflows/release.yml",
@@ -138,212 +26,12 @@
       "created_at": "2026-03-21T11:48:14.09331Z"
     },
     {
-      "fingerprint": "92d90799bdd424442c4f720ffa7283184df50ec86773329320d4f3230cfc0995",
-      "rule_id": "SEC-163",
-      "file_path": ".goreleaser.yaml",
-      "severity": "medium",
-      "reason": "GoReleaser template variable HOMEBREW_TAP_GITHUB_TOKEN, not a hardcoded secret",
-      "created_at": "2026-03-21T11:48:15.010918Z"
-    },
-    {
-      "fingerprint": "1fba1f451e6a3bc8cc68cedb19ebccbc62f070b82774912a77b71996bcb037b2",
-      "rule_id": "SEC-163",
-      "file_path": ".nox/baseline.json",
-      "severity": "medium",
-      "reason": "False positive: SHA fingerprint in nox baseline.json",
-      "created_at": "2026-03-21T11:48:16.245265Z"
-    },
-    {
-      "fingerprint": "0bca21086565fc79ac4a2f51466935bdb9d97c79d3d9727b8401ef3ed7240aad",
-      "rule_id": "SEC-163",
-      "file_path": ".nox/baseline.json",
-      "severity": "medium",
-      "reason": "False positive: SHA fingerprint in nox baseline.json",
-      "created_at": "2026-03-21T11:48:16.953139Z"
-    },
-    {
-      "fingerprint": "8e98f2f5ebde6a8ac4d1e769f28a01f1888504c13f2083dd33e77d31fc04ca04",
-      "rule_id": "SEC-161",
-      "file_path": ".nox/baseline.json",
-      "severity": "medium",
-      "reason": "Recursive: nox baseline.json contains SHA fingerprints by design",
-      "created_at": "2026-03-21T11:48:50.190114Z"
-    },
-    {
-      "fingerprint": "8ccd59d5f7d2c51cb1ef3b9957465274cc05a77a3d5cd62c405d3a57c7234973",
-      "rule_id": "SEC-162",
-      "file_path": ".nox/baseline.json",
-      "severity": "medium",
-      "reason": "Recursive: nox baseline.json contains SHA fingerprints by design",
-      "created_at": "2026-03-21T11:48:51.130697Z"
-    },
-    {
-      "fingerprint": "99e0c42f4b04554569d74f9bdd7e58c6ed8ed9f71db151d0d9d7e56bca2a5e13",
-      "rule_id": "SEC-163",
-      "file_path": ".nox/baseline.json",
-      "severity": "medium",
-      "reason": "Recursive: nox baseline.json contains SHA fingerprints by design",
-      "created_at": "2026-03-21T11:48:52.129943Z"
-    },
-    {
       "fingerprint": "389655a5587ebebbc28fe4c0e02687ddda72aa2600bdbb372d9e36010db649dd",
       "rule_id": "IAC-351",
       "file_path": ".github/workflows/release.yml",
       "severity": "critical",
       "reason": "False positive — references secrets.GITHUB_TOKEN, not hardcoded",
       "created_at": "2026-03-22T21:29:38.183802Z"
-    },
-    {
-      "fingerprint": "113ec23bb77a012c6d112ce8e1448e289bf555b7bb54c01ba3a07497f5c9635b",
-      "rule_id": "AI-049",
-      "file_path": "cmd/scout/mcp.go",
-      "severity": "high",
-      "reason": "Intentional — eval tool gated behind SCOUT_ENABLE_EVAL=1",
-      "created_at": "2026-03-22T21:29:38.731476Z"
-    },
-    {
-      "fingerprint": "c9e1c480876ca3d774832dd0894f0bf793162275b937f66b75e835eb5d073804",
-      "rule_id": "CONT-001",
-      "file_path": "Dockerfile",
-      "severity": "medium",
-      "reason": "Accepted: Docker stable tag is intentional for GoReleaser",
-      "created_at": "2026-03-22T21:31:07.436839Z"
-    },
-    {
-      "fingerprint": "24f5a1b069ec3c859f4e8c0260717aeff19b4f461763a7c0ede18b145710200a",
-      "rule_id": "DATA-001",
-      "file_path": ".relicta/releases/run-05f1797493ee14a5.json",
-      "severity": "medium",
-      "reason": "False positive: relicta release metadata, not a secret",
-      "created_at": "2026-03-22T21:31:10.614492Z"
-    },
-    {
-      "fingerprint": "51de535213c8e40d7f57ad21d78803bc465d5950f5e00ce10f770a23e1c8c133",
-      "rule_id": "DATA-001",
-      "file_path": ".relicta/releases/run-05f1797493ee14a5.json",
-      "severity": "medium",
-      "reason": "False positive: relicta release metadata",
-      "created_at": "2026-03-22T21:31:12.872072Z"
-    },
-    {
-      "fingerprint": "5df1bd91be8158f5344b1d20114fcb4c2e8c9f735d7548e0f0db656d7863841b",
-      "rule_id": "DATA-001",
-      "file_path": ".relicta/releases/run-05f1797493ee14a5.json",
-      "severity": "medium",
-      "reason": "False positive: relicta release metadata",
-      "created_at": "2026-03-22T21:31:15.981661Z"
-    },
-    {
-      "fingerprint": "f954b50887a49840f224473a2557a3c094bc77b44e78879045c049b2ff392d01",
-      "rule_id": "DATA-001",
-      "file_path": ".relicta/releases/run-05f1797493ee14a5.json",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS patch",
-      "created_at": "2026-03-22T21:31:18.634588Z"
-    },
-    {
-      "fingerprint": "2a968b5378691ca3d41a4987230a25335e78b0f7ea14166263d61edbf6fa0bb5",
-      "rule_id": "DATA-001",
-      "file_path": ".relicta/releases/run-05f1797493ee14a5.json",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS patch",
-      "created_at": "2026-03-22T21:31:24.736248Z"
-    },
-    {
-      "fingerprint": "dcf7a2bfd5f2e66ebf3354d55ac09d0a60ee0b116fecef05f62305323448223c",
-      "rule_id": "DATA-001",
-      "file_path": ".relicta/releases/run-05f1797493ee14a5.json",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS",
-      "created_at": "2026-03-22T21:31:24.808147Z"
-    },
-    {
-      "fingerprint": "9c11ee3f24eedb144a69eebaa83607b827fd2f79d22cbebb05d759037442f9ae",
-      "rule_id": "DATA-001",
-      "file_path": ".relicta/releases/run-98c44d6ed8ecfcb9.json",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS",
-      "created_at": "2026-03-22T21:31:26.751752Z"
-    },
-    {
-      "fingerprint": "b2d44c96e661daa89b41820078ca0796d28274465ca8a1fc7470e58394b3b6ad",
-      "rule_id": "DATA-001",
-      "file_path": ".relicta/releases/run-98c44d6ed8ecfcb9.json",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS",
-      "created_at": "2026-03-22T21:31:29.429753Z"
-    },
-    {
-      "fingerprint": "ba4ba35ae3aa7b5cdf29018e5240d4af4c2d2ed69bbbc119f423288353644af9",
-      "rule_id": "DATA-001",
-      "file_path": ".relicta/releases/run-98c44d6ed8ecfcb9.json",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS",
-      "created_at": "2026-03-22T21:31:31.883422Z"
-    },
-    {
-      "fingerprint": "c883d2b9b33e616b6e5a09ddafabb37b82d50654490b78f2f83625d9273283d0",
-      "rule_id": "DATA-001",
-      "file_path": "README.md",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS",
-      "created_at": "2026-03-22T21:31:38.735388Z"
-    },
-    {
-      "fingerprint": "8b35b5b91236dd0f4f9b6cb8ec6b6ce1fb609a07a4262d835a54ec1460ee05e1",
-      "rule_id": "DATA-001",
-      "file_path": "agent/batch_test.go",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS",
-      "created_at": "2026-03-22T21:31:41.488959Z"
-    },
-    {
-      "fingerprint": "d7be2b66afeb259608431f2597672273cc312505729e94c76851a5a60161b711",
-      "rule_id": "DATA-001",
-      "file_path": "agent/batch_test.go",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS",
-      "created_at": "2026-03-22T21:31:43.321894Z"
-    },
-    {
-      "fingerprint": "1abf1f72090f7a0ea2f2d165cd1f9628b4efdbee1b33594c8186ec5c9462c9db",
-      "rule_id": "DATA-001",
-      "file_path": "cmd/scout/mcp.go",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS",
-      "created_at": "2026-03-22T21:31:50.973843Z"
-    },
-    {
-      "fingerprint": "99145e72ddeaba01d73c123f284d13019046ba717e76939a02e64ef5071ddc66",
-      "rule_id": "DATA-001",
-      "file_path": "cmd/scout/mcp.go",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS",
-      "created_at": "2026-03-22T21:31:51.292956Z"
-    },
-    {
-      "fingerprint": "90fcc8721ece2681131d4d589fd22762d3647bca8cbd42bf5ecfdf1d39e60a55",
-      "rule_id": "DATA-001",
-      "file_path": "docs/blog-post-devto.md",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS",
-      "created_at": "2026-03-22T21:31:51.789842Z"
-    },
-    {
-      "fingerprint": "13ce185571c2b71b1474aec88e869c4988bdb063f9ced5564cd28b8eab0577c0",
-      "rule_id": "DATA-001",
-      "file_path": "docs/blog-post-devto.md",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS",
-      "created_at": "2026-03-22T21:31:53.622661Z"
-    },
-    {
-      "fingerprint": "8f0e120fc15f94064c86800b7a427678156544faf802e4b03c0da567d2f8a8c1",
-      "rule_id": "DATA-001",
-      "file_path": "docs/index.html",
-      "severity": "medium",
-      "reason": "False positive: hex string in stealth JS",
-      "created_at": "2026-03-22T21:31:56.851273Z"
     },
     {
       "fingerprint": "15849b74eb9b6cd44a0fd1d725ae751329eb1bc4c30dd5d786a464428f27d2ea",
@@ -362,108 +50,12 @@
       "created_at": "2026-03-22T21:32:01.469567Z"
     },
     {
-      "fingerprint": "7598dc1352366b97d1144d0ce86369e065173f4cb7438bbe4d06d439137d4462",
-      "rule_id": "SEC-161",
-      "file_path": ".roady/spec.yaml",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:32:07.280901Z"
-    },
-    {
-      "fingerprint": "e8b7516a067b55ec8c44646120af5f88a1b2ffddc4b99cfde2e10e64a6f69c29",
-      "rule_id": "SEC-161",
-      "file_path": "cmd/scout/mcp.go",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:32:10.39248Z"
-    },
-    {
-      "fingerprint": "89ee904210b6f01e70bbfaeee72e0f85fa175929041df08718f68f6143013af7",
-      "rule_id": "SEC-161",
-      "file_path": "cmd/scout/mcp.go",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:32:12.613324Z"
-    },
-    {
       "fingerprint": "47150b89dabd41cf65476715fac39974c9cdc759ca406667df610e34ef629e50",
       "rule_id": "SEC-163",
       "file_path": ".goreleaser.yaml",
       "severity": "medium",
       "reason": "False positive: demo email address",
       "created_at": "2026-03-22T21:32:15.276445Z"
-    },
-    {
-      "fingerprint": "56458e4d66900c9a5b3b818e162de9dfdf5e197c167f444134b1a773d1f4b2b2",
-      "rule_id": "SEC-163",
-      "file_path": ".roady/spec.lock.json",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:32:18.382338Z"
-    },
-    {
-      "fingerprint": "346ec91750c1fabd372185302c1e47934fb7599b097ea2106679750bfb26ab06",
-      "rule_id": "SEC-163",
-      "file_path": ".roady/spec.lock.json",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:32:20.162733Z"
-    },
-    {
-      "fingerprint": "2920917733a43e776023e6f16c6b1dd33b582b350c0f07cb3eaa42e24cc235cc",
-      "rule_id": "SEC-163",
-      "file_path": ".roady/spec.lock.json",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:32:22.82953Z"
-    },
-    {
-      "fingerprint": "199a6c3f4a379714214cee2df3697bc89bf4c1a60842ea596ee2181f01e9f466",
-      "rule_id": "SEC-163",
-      "file_path": ".roady/spec.lock.json",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:32:25.504129Z"
-    },
-    {
-      "fingerprint": "7b62a1532e9d20da2f9f3f86cd3b1eb346ec91ee3287c46e813b51d65b7adbf1",
-      "rule_id": "SEC-163",
-      "file_path": ".roady/spec.yaml",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:32:28.166018Z"
-    },
-    {
-      "fingerprint": "bccc49c7e1b6ccc589e5d76bc962df1bb8b876632bfe1414b3f2ef3e0834c8c3",
-      "rule_id": "SEC-163",
-      "file_path": ".roady/spec.yaml",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:32:30.945827Z"
-    },
-    {
-      "fingerprint": "879c966758ef198d44c55c921a234afda010a438403eddfd495fd09b16a68818",
-      "rule_id": "SEC-163",
-      "file_path": ".roady/spec.yaml",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:32:37.847192Z"
-    },
-    {
-      "fingerprint": "0d2fd63124723a7bff8bee252aff406f4c2d9ea0c4a5ac19d4b2f229af0643d0",
-      "rule_id": "SEC-163",
-      "file_path": ".roady/spec.yaml",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:32:40.836676Z"
-    },
-    {
-      "fingerprint": "7b80c5f700b5b658a6595ea87932aeda7e14da9724a421873b821f6b4ed0e3c9",
-      "rule_id": "SEC-163",
-      "file_path": ".roady/spec.yaml",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:32:43.121348Z"
     },
     {
       "fingerprint": "7c1e59f705c29aa183c3b3d9e0520bc7a2105868baff3cb93c2ce7ce46c8cd4d",
@@ -474,76 +66,80 @@
       "created_at": "2026-03-22T21:32:45.756403Z"
     },
     {
-      "fingerprint": "f04f26d9eace2b2cb68f65d21de1db3bdf41cc5f641c372ccb32dd29e2301f0f",
+      "fingerprint": "3e490ab385e794eac1730ebd6da711b5862e9848678c68d9f9d6a56c32219d08",
+      "rule_id": "AI-049",
+      "file_path": "cmd/scout/mcp.go",
+      "severity": "high",
+      "reason": "Accepted risk: MCP eval tool is disabled by default and only registered when SCOUT_ENABLE_EVAL=1 is explicitly set.",
+      "created_at": "2026-04-30T08:28:10.788103Z"
+    },
+    {
+      "fingerprint": "4a5432b257c252b63fba802c8fdb7c7eb5b356998492a93f99159e09fc518972",
+      "rule_id": "SEC-161",
+      "file_path": "internal/agui/server.go",
+      "severity": "medium",
+      "reason": "False positive: environment variable name in user-facing error message, not a secret value.",
+      "created_at": "2026-04-30T08:28:10.96104Z"
+    },
+    {
+      "fingerprint": "41466eebb7d0079bb96284bec0fb41255f8939083a5f508a1d155b9d53c5037b",
       "rule_id": "SEC-163",
       "file_path": "cmd/scout/mcp.go",
       "severity": "medium",
-      "reason": "Accepted: OIDC token write permission needed for MCP Registry",
-      "created_at": "2026-03-22T21:32:49.30913Z"
+      "reason": "False positive: jsonschema metadata for tool input, not a secret.",
+      "created_at": "2026-04-30T08:28:11.109182Z"
     },
     {
-      "fingerprint": "b51c58fc7e1478bd9ce4ffad9529111590f954c4e6c475ce4608be7db9339459",
+      "fingerprint": "fa7d1974700ff215571baae51542d365f200204229a0a2ab0e4777afdffe80f7",
+      "rule_id": "SEC-163",
+      "file_path": "internal/agui/server.go",
+      "severity": "medium",
+      "reason": "False positive: environment variable name in provider configuration, not a secret value.",
+      "created_at": "2026-04-30T08:28:11.170231Z"
+    },
+    {
+      "fingerprint": "7f474fbbcc16c2ecf835a1e1c055095dbf2a52f75e8195345bdec37ecba2fdf1",
+      "rule_id": "SEC-163",
+      "file_path": "internal/agui/server.go",
+      "severity": "medium",
+      "reason": "False positive: environment variable name in provider configuration, not a secret value.",
+      "created_at": "2026-04-30T08:28:11.203395Z"
+    },
+    {
+      "fingerprint": "4d37020e43a1c94e17d166d5bf1825a526fca39cdaf7fada1cbe2b4dafaa953c",
+      "rule_id": "SEC-163",
+      "file_path": "internal/agui/tools.go",
+      "severity": "medium",
+      "reason": "False positive: tool schema description text, not a secret.",
+      "created_at": "2026-04-30T08:28:11.253446Z"
+    },
+    {
+      "fingerprint": "441ea7b50ca65853a2f39b52cdaac1c18017685eaa962faa89e8d92e5b760df1",
+      "rule_id": "SEC-163",
+      "file_path": "agent/session.go",
+      "severity": "medium",
+      "created_at": "2026-04-30T08:30:58.99833Z"
+    },
+    {
+      "fingerprint": "c6a2d1d7632ca7e61b11cb12b1627c687486e4625ccd882205502d49a1415fc5",
+      "rule_id": "SEC-163",
+      "file_path": "agent/session.go",
+      "severity": "medium",
+      "created_at": "2026-04-30T08:30:58.99833Z"
+    },
+    {
+      "fingerprint": "06ed542581208aeef7554ca878db34e1d9f72e95e3a061ff57d1373b65723298",
       "rule_id": "SEC-163",
       "file_path": "cmd/scout/mcp.go",
       "severity": "medium",
-      "reason": "Accepted: packages write permission needed for GHCR Docker push",
-      "created_at": "2026-03-22T21:32:52.399043Z"
+      "created_at": "2026-04-30T08:30:58.99833Z"
     },
     {
-      "fingerprint": "8eeb8e213328d62b3a8f17ce910678d2547d532115fcbf7c3020fce1f2cdfd84",
+      "fingerprint": "eca7a394a9cdc8acc0a23981d767aba4ddd814b0fb62e86a8eaa39516c939164",
       "rule_id": "SEC-163",
       "file_path": "cmd/scout/mcp.go",
       "severity": "medium",
-      "reason": "False positive: high-entropy string in stealth JS",
-      "created_at": "2026-03-22T21:32:55.103526Z"
-    },
-    {
-      "fingerprint": "3f646197bea797d03adde9fed704b1f90d1022265d7f025f30f6afb752ad8955",
-      "rule_id": "SEC-163",
-      "file_path": "cmd/scout/mcp.go",
-      "severity": "medium",
-      "reason": "False positive: high-entropy string in stealth JS",
-      "created_at": "2026-03-22T21:32:58.213879Z"
-    },
-    {
-      "fingerprint": "6bdfe5ee12939141494ccdff84c3f3ab8ba420f19d5803a2c91ba81823b30583",
-      "rule_id": "SEC-163",
-      "file_path": "cmd/scout/mcp.go",
-      "severity": "medium",
-      "reason": "False positive: high-entropy string in stealth JS",
-      "created_at": "2026-03-22T21:33:00.406177Z"
-    },
-    {
-      "fingerprint": "d1a4ccd7f345cf823fc453356fffa35bbadf9610b226628d2a8fc13d306c1673",
-      "rule_id": "SEC-163",
-      "file_path": "cmd/scout/mcp.go",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:33:02.773432Z"
-    },
-    {
-      "fingerprint": "557ea83f3873d8d0cfd44bbd0dbd318cfc267f132ed191dcbd8aa8b4fc829a3a",
-      "rule_id": "SEC-163",
-      "file_path": "cmd/scout/mcp.go",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:33:10.044156Z"
-    },
-    {
-      "fingerprint": "41b72383479dba3c3165456f6d60436ae20f1db66a9c681c0c3f5591ecbc68a1",
-      "rule_id": "SEC-163",
-      "file_path": "piercing_test.go",
-      "severity": "medium",
-      "reason": "False positive: demo email address",
-      "created_at": "2026-03-22T21:33:12.578549Z"
-    },
-    {
-      "fingerprint": "6e6134f3ab03266ccc34405dbab299f049b282c7e37e241d79d201d6750f52da",
-      "rule_id": "DATA-001",
-      "file_path": "README.md",
-      "severity": "medium",
-      "reason": "False positive: demo email address in README code example",
-      "created_at": "2026-03-22T21:33:29.841332Z"
+      "created_at": "2026-04-30T08:30:58.99833Z"
     }
   ]
 }

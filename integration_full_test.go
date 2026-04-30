@@ -3,6 +3,7 @@ package browse
 import (
 	"errors"
 	"fmt"
+	"html"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -43,6 +44,11 @@ func fullTestServer() *httptest.Server {
 	mux.HandleFunc("/about", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		fmt.Fprint(w, `<!DOCTYPE html><html><head><title>About Page</title></head><body><h1 id="about-title">About</h1></body></html>`)
+	})
+
+	mux.HandleFunc("/user-agent", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprintf(w, `<!DOCTYPE html><html><body><span id="ua">%s</span></body></html>`, html.EscapeString(r.UserAgent()))
 	})
 
 	mux.HandleFunc("/delayed", func(w http.ResponseWriter, r *http.Request) {
@@ -707,12 +713,12 @@ func TestIntegrationSetUserAgent(t *testing.T) {
 		if err := c.Page().SetUserAgent("ScoutBot/1.0"); err != nil {
 			t.Fatalf("SetUserAgent: %v", err)
 		}
-		// Verify by evaluating navigator.userAgent
-		result, err := c.Eval(`navigator.userAgent`)
+		c.MustNavigate(ts.URL + "/user-agent")
+		result, err := c.El("#ua").Text()
 		if err != nil {
-			t.Fatalf("eval userAgent: %v", err)
+			t.Fatalf("read userAgent: %v", err)
 		}
-		userAgent, _ = result.(string)
+		userAgent = result
 	})
 
 	if err := engine.Run("set-ua"); err != nil {
@@ -1517,9 +1523,8 @@ func TestIntegrationEngineWithUserAgent(t *testing.T) {
 
 	var ua string
 	engine.Task("check-ua", func(c *Context) {
-		c.MustNavigate(ts.URL)
-		result, _ := c.Eval(`navigator.userAgent`)
-		ua, _ = result.(string)
+		c.MustNavigate(ts.URL + "/user-agent")
+		ua, _ = c.El("#ua").Text()
 	})
 
 	if err := engine.Run("check-ua"); err != nil {

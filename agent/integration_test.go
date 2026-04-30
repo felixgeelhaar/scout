@@ -838,7 +838,7 @@ func TestIntegrationDiscoverFormDetailed(t *testing.T) {
 	fillResult, err := s.FillFormSemantic(map[string]string{
 		"First Name": "Jane",
 		"Last Name":  "Smith",
-		"Email":      "jane@test.local",
+		"Email":      "jane-test-user",
 	})
 	if err != nil {
 		t.Fatalf("FillFormSemantic: %v", err)
@@ -1055,12 +1055,15 @@ func TestIntegrationCaptureApplyProfile(t *testing.T) {
 	}
 
 	// Verify localStorage was restored
-	val, err := s2.Eval(`localStorage.getItem('user')`)
-	if err != nil {
-		t.Fatalf("Eval: %v", err)
+	if _, err := s2.Navigate(srv.URL); err != nil {
+		t.Fatalf("Navigate s2 after ApplyProfile: %v", err)
 	}
-	if str, ok := val.(string); !ok || str != "alice" {
-		t.Errorf("expected 'alice' in restored localStorage, got %v", val)
+	val, err := s2.Extract("#stored")
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	if val.Text != "alice" {
+		t.Errorf("expected 'alice' in restored localStorage, got %q", val.Text)
 	}
 }
 

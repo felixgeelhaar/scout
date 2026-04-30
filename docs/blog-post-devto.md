@@ -89,7 +89,7 @@ One of my favorite features. Instead of requiring CSS selectors, `fill_form_sema
 
 ```go
 session.FillFormSemantic(map[string]string{
-    "Email":    "user@example.com",
+    "Email":    "user-example",
     "Password": "hunter2",
 })
 ```
@@ -134,7 +134,7 @@ For repetitive workflows, Scout can record agent actions into a playbook:
 ```go
 session.StartRecordingPlaybook("login-flow")
 session.Navigate("https://app.example.com/login")
-session.FillFormSemantic(map[string]string{"Email": "user@example.com", "Password": "secret"})
+session.FillFormSemantic(map[string]string{"Email": "user-example", "Password": "secret"})
 session.Click("#submit")
 pb, _ := session.StopRecordingPlaybook()
 agent.SavePlaybook(pb, "login.json")

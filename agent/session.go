@@ -94,6 +94,12 @@ func NewSession(cfg SessionConfig) (*Session, error) {
 		return nil, fmt.Errorf("failed to launch browser: %w", err)
 	}
 
+	network := &networkState{
+		pending:      make(map[string]*NetworkCapture),
+		pendingAll:   make(map[string]*NetworkCapture),
+		historyLimit: 200,
+	}
+
 	return &Session{
 		browser:         engine,
 		timeout:         cfg.Timeout,
@@ -104,7 +110,7 @@ func NewSession(cfg SessionConfig) (*Session, error) {
 		viewport:        cfg.Viewport,
 		allowPrivateIPs: cfg.AllowPrivateIPs,
 		remoteCDP:       cfg.RemoteCDP,
-		network:         &networkState{pending: make(map[string]*NetworkCapture), pendingAll: make(map[string]*NetworkCapture), historyLimit: 200},
+		network:         network,
 		recoverTimeoutN: 3,
 	}, nil
 }
@@ -115,6 +121,12 @@ func NewSessionFromBrowser(b browse.Browser, cfg SessionConfig) *Session {
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 30 * time.Second
 	}
+	network := &networkState{
+		pending:      make(map[string]*NetworkCapture),
+		pendingAll:   make(map[string]*NetworkCapture),
+		historyLimit: 200,
+	}
+
 	return &Session{
 		browser:         b,
 		timeout:         cfg.Timeout,
@@ -125,7 +137,7 @@ func NewSessionFromBrowser(b browse.Browser, cfg SessionConfig) *Session {
 		viewport:        cfg.Viewport,
 		allowPrivateIPs: cfg.AllowPrivateIPs,
 		remoteCDP:       cfg.RemoteCDP,
-		network:         &networkState{pending: make(map[string]*NetworkCapture), pendingAll: make(map[string]*NetworkCapture), historyLimit: 200},
+		network:         network,
 		recoverTimeoutN: 3,
 	}
 }

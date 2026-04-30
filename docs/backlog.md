@@ -154,3 +154,15 @@ Add WebDriver BiDi protocol support alongside CDP to enable Firefox and Safari a
 Improve MCP session resilience and diagnostics: add explicit reset tool, automatic recovery after consecutive timeout failures, richer error context for navigation/CDP failures, status visibility endpoint for browser/session health, and request history ring buffer so network inspection can include recent requests captured before explicit enablement.
 
 ---
+
+## Resolve security vulnerabilities
+
+Resolve current security scanner findings by addressing dependency/container/IaC issues and removing or suppressing non-sensitive false positives without weakening production security. Acceptance criteria: no unhandled actionable findings remain, manifests stay buildable, and unit validation passes where practical.
+
+---
+
+## Tighten security scan hygiene
+
+Tighten local security scanning so generated frontend dependency and build directories do not dominate nox results. Acceptance criteria: project scan excludes generated UI artifacts, security checks still cover source files and manifests, and existing verification remains green.
+
+---

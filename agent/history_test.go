@@ -106,7 +106,7 @@ func TestSessionHistory_ReturnsCopy(t *testing.T) {
 
 func TestAddHistory_AllFields(t *testing.T) {
 	s := newTestSession()
-	s.addHistory("type", "#email", "https://example.com/login", "test@test.com")
+	s.addHistory("type", "#email", "https://example.com/login", "test-user")
 
 	entry := s.history[0]
 	if entry.Action != "type" {
@@ -118,7 +118,7 @@ func TestAddHistory_AllFields(t *testing.T) {
 	if entry.URL != "https://example.com/login" {
 		t.Errorf("URL: got %q", entry.URL)
 	}
-	if entry.Result != "test@test.com" {
+	if entry.Result != "test-user" {
 		t.Errorf("Result: got %q", entry.Result)
 	}
 }

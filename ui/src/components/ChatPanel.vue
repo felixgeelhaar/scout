@@ -11,7 +11,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   send: [text: string];
-  stop: [];
+  cancel: [];
   clear: [];
 }>();
 
@@ -171,7 +171,7 @@ watch(
           v-if="isRunning"
           type="button"
           class="shrink-0 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-500 transition-colors"
-          @click="emit('stop')"
+          @click="emit('cancel')"
         >
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="6" width="12" height="12" rx="1" />

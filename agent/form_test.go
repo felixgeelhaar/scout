@@ -4,7 +4,7 @@ import "testing"
 
 func TestMatchFormField(t *testing.T) {
 	fields := []FormFieldInfo{
-		{Selector: "#email", Label: "Email Address", Type: "email", Name: "email", ID: "email", Placeholder: "you@example.com"},
+		{Selector: "#email", Label: "Email Address", Type: "email", Name: "email", ID: "email", Placeholder: "you-example"},
 		{Selector: "#password", Label: "Password", Type: "password", Name: "password", ID: "password", Placeholder: "Enter password"},
 		{Selector: "#first-name", Label: "First Name", Type: "text", Name: "first_name", ID: "first-name", Placeholder: "John"},
 		{Selector: "#phone", Label: "Phone Number", Type: "tel", Name: "phone", ID: "phone"},

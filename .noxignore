@@ -1,0 +1,8 @@
+.nox/
+**/*_test.go
+*_test.go
+.roady/
+ui/node_modules/
+ui/dist/
+ui/package-lock.json
+ui/tsconfig.tsbuildinfo

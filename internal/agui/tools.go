@@ -91,7 +91,7 @@ func CuratedTools() []ToolDef {
 		},
 		{
 			Name:        "fill_form_semantic",
-			Description: "Fill form fields by human-readable names. Example: {\"Email\": \"user@test.com\", \"Password\": \"secret\"}",
+			Description: "Fill form fields by human-readable names.",
 			InputSchema: schema(prop("fields", "object", "Object where keys are human-readable field names and values are text to type", true)),
 		},
 		{

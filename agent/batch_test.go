@@ -46,7 +46,7 @@ func TestExecuteBatch(t *testing.T) {
 
 	result, err := s.ExecuteBatch([]agent.BatchAction{
 		{Action: "type", Selector: "#name", Value: "Alice"},
-		{Action: "type", Selector: "#email", Value: "alice@test.com"},
+		{Action: "type", Selector: "#email", Value: "alice-test-user"},
 		{Action: "scroll_to", Selector: "#section"},
 		{Action: "click", Selector: "#submit"},
 	})
@@ -132,7 +132,7 @@ func TestExecuteBatchFillFormSemantic(t *testing.T) {
 			Action: "fill_form_semantic",
 			Fields: map[string]string{
 				"Name":  "Charlie",
-				"Email": "charlie@test.com",
+				"Email": "charlie-test-user",
 			},
 		},
 	})

@@ -26,7 +26,7 @@ const {
       :error="error"
       class="w-[380px] shrink-0 border-r border-zinc-800/60"
       @send="send"
-      @stop="stop"
+      @cancel="stop"
       @clear="clear"
     />
 

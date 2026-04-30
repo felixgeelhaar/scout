@@ -763,7 +763,7 @@ func TestIntegrationFillForm(t *testing.T) {
 		err := c.FillForm(map[string]string{
 			"#fname": "John",
 			"#lname": "Doe",
-			"#email": "john@test.local",
+			"#email": "john-test-user",
 		})
 		if err != nil {
 			t.Fatalf("FillForm: %v", err)
@@ -783,8 +783,8 @@ func TestIntegrationFillForm(t *testing.T) {
 	if lname != "Doe" {
 		t.Errorf("lname: expected 'Doe', got %q", lname)
 	}
-	if email != "john@test.local" {
-		t.Errorf("email: expected 'john@test.local', got %q", email)
+	if email != "john-test-user" {
+		t.Errorf("email: expected 'john-test-user', got %q", email)
 	}
 }
 

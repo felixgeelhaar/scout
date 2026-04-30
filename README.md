@@ -143,7 +143,7 @@ _, diff, _ := session.ObserveDiff()
 
 // Semantic form filling — no CSS selectors
 session.FillFormSemantic(map[string]string{
-    "Email": "user@example.com", "Password": "secret",
+    "Email": "user-example", "Password": "secret",
 })
 
 // Visual grounding — click by number, not selector

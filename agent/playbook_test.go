@@ -14,10 +14,10 @@ func TestPlaybook_JSON_Roundtrip(t *testing.T) {
 		URL:  "https://example.com/login",
 		Actions: []Action{
 			{Type: "navigate", Value: "https://example.com/login"},
-			{Type: "type", Selector: "#email", Value: "test@test.com"},
+			{Type: "type", Selector: "#email", Value: "test-user"},
 			{Type: "type", Selector: "#password", Value: "secret"},
 			{Type: "click", Selector: "#submit"},
-			{Type: "fill_form_semantic", Fields: map[string]string{"Email": "a@b.com"}},
+			{Type: "fill_form_semantic", Fields: map[string]string{"Email": "ab-user"}},
 			{Type: "click_label", Label: 3},
 			{Type: "wait", Selector: "#dashboard"},
 			{
@@ -28,7 +28,7 @@ func TestPlaybook_JSON_Roundtrip(t *testing.T) {
 					URL:      "https://example.com/dashboard",
 					Title:    "Dashboard",
 					Selector: "#username",
-					Text:     "test@test.com",
+					Text:     "test-user",
 				},
 			},
 		},
@@ -49,7 +49,7 @@ func TestPlaybook_JSON_Roundtrip(t *testing.T) {
 	if len(got.Actions) != len(pb.Actions) {
 		t.Fatalf("actions length: got %d, want %d", len(got.Actions), len(pb.Actions))
 	}
-	if got.Actions[4].Fields["Email"] != "a@b.com" {
+	if got.Actions[4].Fields["Email"] != "ab-user" {
 		t.Error("fill_form_semantic fields not preserved")
 	}
 	if got.Actions[5].Label != 3 {
@@ -178,7 +178,7 @@ func TestAction_JSON(t *testing.T) {
 		{"click", Action{Type: "click", Selector: "#btn"}},
 		{"type", Action{Type: "type", Selector: "#input", Value: "hello"}},
 		{"click_label", Action{Type: "click_label", Label: 5}},
-		{"fill_form", Action{Type: "fill_form_semantic", Fields: map[string]string{"Email": "a@b.com"}}},
+		{"fill_form", Action{Type: "fill_form_semantic", Fields: map[string]string{"Email": "ab-user"}}},
 		{"with expected", Action{
 			Type:     "click",
 			Selector: "#login",

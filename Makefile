@@ -40,8 +40,10 @@ cover-check:
 
 ## Security scan
 nox:
-	nox scan .
-	nox list-findings
+	nox scan . || test -f findings.json
+	test "$$(jq '[.findings[] | select(.Status != "baselined")] | length' findings.json)" -eq 0
+	cd ui && npm audit --audit-level=moderate
+	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 
 ## Install pre-commit hook
 hooks:

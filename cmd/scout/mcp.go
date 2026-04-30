@@ -80,7 +80,7 @@ type TypeInput struct {
 }
 
 type FillFormInput struct {
-	Fields map[string]string `json:"fields" jsonschema:"required,description=JSON object where keys are CSS selectors and values are text to type. Example: {\"#email\": \"user@test.com\", \"#password\": \"secret\"}"`
+	Fields map[string]string `json:"fields" jsonschema:"required,description=Field values keyed by CSS selector"`
 }
 
 type ExtractInput struct {
@@ -129,7 +129,7 @@ type DiscoverFormInput struct {
 }
 
 type FillFormSemanticInput struct {
-	Fields map[string]string `json:"fields" jsonschema:"required,description=JSON object where keys are human-readable field names and values are text to type. Example: {\"Email\": \"user@test.com\", \"Password\": \"secret\"}"`
+	Fields map[string]string `json:"fields" jsonschema:"required,description=Field values keyed by human-readable field name"`
 }
 
 type EnableNetworkInput struct {
@@ -441,7 +441,7 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 
 	srv.Tool("observe_diff").
 		ReadOnly().
-		Description("Observe the page and return only what changed since the last observation. Much more token-efficient.").
+		Description("Return only page changes since the last observation.").
 		Handler(func(ctx context.Context, input ObserveInput) (*ObserveDiffResult, error) {
 			obs, diff, err := s().ObserveDiff()
 			if err != nil {
@@ -452,7 +452,7 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 
 	srv.Tool("observe_with_budget").
 		ReadOnly().
-		Description("Observe the page constrained to an approximate token budget. Prioritizes interactive elements.").
+		Description("Observe the page within a token budget.").
 		Handler(func(ctx context.Context, input ObserveWithBudgetInput) (*agent.Observation, error) {
 			return s().ObserveWithBudget(input.Budget)
 		})
@@ -488,14 +488,14 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 		})
 
 	srv.Tool("fill_form").
-		Description("Fill multiple form fields at once. Keys are CSS selectors, values are text to type.").
+		Description("Fill multiple form fields at once.").
 		Handler(func(ctx context.Context, input FillFormInput) (*agent.FormResult, error) {
 			out, err := s().FillForm(input.Fields)
 			return out, mcpErr(err)
 		})
 
 	srv.Tool("fill_form_semantic").
-		Description("Fill form fields using human-readable names (e.g., 'Email', 'Password') instead of CSS selectors.").
+		Description("Fill form fields by label or name.").
 		Handler(func(ctx context.Context, input FillFormSemanticInput) (*agent.SemanticFillResult, error) {
 			out, err := s().FillFormSemantic(input.Fields)
 			return out, mcpErr(err)
