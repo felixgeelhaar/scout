@@ -134,3 +134,15 @@ func TestDefaultMaxBodySize(t *testing.T) {
 		t.Errorf("defaultMaxBodySize: got %d, want %d", defaultMaxBodySize, 32*1024)
 	}
 }
+
+func TestMatchesAnyPattern(t *testing.T) {
+	if !matchesAnyPattern("https://example.com", nil) {
+		t.Fatal("expected nil patterns to match")
+	}
+	if !matchesAnyPattern("https://example.com/api/users", []string{"/api/"}) {
+		t.Fatal("expected /api/ to match")
+	}
+	if matchesAnyPattern("https://example.com/static", []string{"/api/"}) {
+		t.Fatal("expected /api/ to not match")
+	}
+}

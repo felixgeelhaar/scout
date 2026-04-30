@@ -148,3 +148,9 @@ Cross-platform distribution via GoReleaser: builds for linux/darwin/windows x am
 Add WebDriver BiDi protocol support alongside CDP to enable Firefox and Safari automation. WebDriver BiDi is a W3C standard that works over WebSocket (like CDP) but is supported by Firefox (Marionette → BiDi), Chrome, and Safari (WebKit). Implementation: add internal/bidi/ package as an alternative to internal/cdp/, implement a BrowserProtocol interface that both CDP and BiDi satisfy, let Page delegate to the active protocol. Auto-detect browser type from the WebSocket endpoint and use the right protocol. This makes scout the first Go browser automation library with native cross-browser support via BiDi. Chromium browsers continue using CDP (faster, more features). Firefox and Safari use BiDi. Users select via WithBrowser("firefox") option or the launcher auto-detects installed browsers.
 
 ---
+
+## MCP resilience, diagnostics, and network history improvements
+
+Improve MCP session resilience and diagnostics: add explicit reset tool, automatic recovery after consecutive timeout failures, richer error context for navigation/CDP failures, status visibility endpoint for browser/session health, and request history ring buffer so network inspection can include recent requests captured before explicit enablement.
+
+---

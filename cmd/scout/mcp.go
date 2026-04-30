@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -17,6 +18,50 @@ import (
 	browse "github.com/felixgeelhaar/scout"
 	"github.com/felixgeelhaar/scout/agent"
 )
+
+type MCPErrorEnvelope struct {
+	Code       string `json:"code"`
+	Message    string `json:"message"`
+	Phase      string `json:"phase,omitempty"`
+	Cause      string `json:"cause,omitempty"`
+	StatusCode int    `json:"status_code,omitempty"`
+	URL        string `json:"url,omitempty"`
+	Detail     string `json:"detail,omitempty"`
+	Hint       string `json:"hint,omitempty"`
+}
+
+func mcpErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	var opErr *agent.OperationError
+	if errors.As(err, &opErr) {
+		env := MCPErrorEnvelope{
+			Code:       "SCOUT_OPERATION_ERROR",
+			Message:    opErr.OriginalError,
+			Phase:      opErr.Phase,
+			Cause:      opErr.Cause,
+			StatusCode: opErr.StatusCode,
+			URL:        opErr.URL,
+			Detail:     opErr.Detail,
+		}
+		switch opErr.Cause {
+		case "timeout":
+			env.Hint = "Try reset, then retry the action."
+		case "connection_refused", "connection_error":
+			env.Hint = "Check browser/CDP availability and target URL reachability."
+		case "http_401", "http_403":
+			env.Hint = "Authentication or authorization required."
+		case "http_404":
+			env.Hint = "The target URL or resource was not found."
+		case "browser_closed":
+			env.Hint = "Browser was closed; call reset and retry."
+		}
+		b, _ := json.Marshal(env)
+		return fmt.Errorf("SCOUT_ERROR %s", string(b))
+	}
+	return err
+}
 
 // --- Tool input types ---
 
@@ -92,7 +137,8 @@ type EnableNetworkInput struct {
 }
 
 type NetworkRequestsInput struct {
-	Pattern string `json:"pattern,omitempty" jsonschema:"description=URL substring filter"`
+	Pattern   string `json:"pattern,omitempty" jsonschema:"description=URL substring filter"`
+	MaxRecent int    `json:"max_recent,omitempty" jsonschema:"description=Maximum number of most recent requests to return (0 = all)"`
 }
 
 type AnnotatedScreenshotInput struct {
@@ -122,6 +168,10 @@ type DispatchEventInput struct {
 type ConfigureInput struct {
 	Headless bool `json:"headless" jsonschema:"description=Run browser in headless mode (no visible window). Default true."`
 }
+
+type ResetInput struct{}
+
+type StatusInput struct{}
 
 type HoverInput struct {
 	Selector string `json:"selector" jsonschema:"required,description=CSS selector of element to hover over"`
@@ -312,7 +362,7 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 	maybeNavigate := func(url string) error {
 		if url != "" {
 			_, err := s().Navigate(url)
-			return err
+			return mcpErr(err)
 		}
 		return nil
 	}
@@ -335,7 +385,24 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 			return fmt.Sprintf("Browser reconfigured: %s mode. Next navigation will use the new settings.", mode), nil
 		})
 
-	// --- Navigation & Observation ---
+	srv.Tool("reset").
+		ClosedWorld().
+		Description("Force-reset the current browser session, clearing stuck state and creating a fresh page context.").
+		Handler(func(ctx context.Context, input ResetInput) (string, error) {
+			if err := s().Reset(); err != nil {
+				return "", err
+			}
+			return "Session reset completed", nil
+		})
+
+	srv.Tool("status").
+		ReadOnly().
+		Description("Get current browser/session health status including URL, pending requests, timeout streak, and last error.").
+		Handler(func(ctx context.Context, input StatusInput) (*agent.SessionStatus, error) {
+			return s().Status(), nil
+		})
+
+		// --- Navigation & Observation ---
 
 	srv.Tool("navigate").
 		OpenWorld().
@@ -346,7 +413,7 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 			_ = progress.ReportWithMessage(1, &total, "Launching browser...")
 			result, err := s().Navigate(input.URL)
 			if err != nil {
-				return nil, err
+				return nil, mcpErr(err)
 			}
 			_ = progress.ReportWithMessage(2, &total, "Page loaded")
 			_ = progress.ReportWithMessage(3, &total, "Done")
@@ -390,15 +457,17 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 			return s().ObserveWithBudget(input.Budget)
 		})
 
-	// --- Interaction ---
+		// --- Interaction ---
 
 	srv.Tool("click").
 		Description("Click an element by CSS selector. Set wait=true for navigation clicks.").
 		Handler(func(ctx context.Context, input ClickInput) (*agent.PageResult, error) {
 			if input.Wait {
-				return s().ClickAndWait(input.Selector)
+				out, err := s().ClickAndWait(input.Selector)
+				return out, mcpErr(err)
 			}
-			return s().Click(input.Selector)
+			out, err := s().Click(input.Selector)
+			return out, mcpErr(err)
 		})
 
 	srv.Tool("click_label").
@@ -414,19 +483,22 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 	srv.Tool("type").
 		Description("Type text into an input element. Clears existing value first.").
 		Handler(func(ctx context.Context, input TypeInput) (*agent.ElementResult, error) {
-			return s().Type(input.Selector, input.Text)
+			out, err := s().Type(input.Selector, input.Text)
+			return out, mcpErr(err)
 		})
 
 	srv.Tool("fill_form").
 		Description("Fill multiple form fields at once. Keys are CSS selectors, values are text to type.").
 		Handler(func(ctx context.Context, input FillFormInput) (*agent.FormResult, error) {
-			return s().FillForm(input.Fields)
+			out, err := s().FillForm(input.Fields)
+			return out, mcpErr(err)
 		})
 
 	srv.Tool("fill_form_semantic").
 		Description("Fill form fields using human-readable names (e.g., 'Email', 'Password') instead of CSS selectors.").
 		Handler(func(ctx context.Context, input FillFormSemanticInput) (*agent.SemanticFillResult, error) {
-			return s().FillFormSemantic(input.Fields)
+			out, err := s().FillFormSemantic(input.Fields)
+			return out, mcpErr(err)
 		})
 
 	srv.Tool("dispatch_event").
@@ -494,13 +566,14 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 			return s().ExecuteBatch(input.Actions)
 		})
 
-	// --- Extraction ---
+		// --- Extraction ---
 
 	srv.Tool("extract").
 		ReadOnly().
 		Description("Extract text content from a single element.").
 		Handler(func(ctx context.Context, input ExtractInput) (*agent.ElementResult, error) {
-			return s().Extract(input.Selector)
+			out, err := s().Extract(input.Selector)
+			return out, mcpErr(err)
 		})
 
 	srv.Tool("extract_all").
@@ -614,9 +687,13 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 
 	srv.Tool("network_requests").
 		ReadOnly().
-		Description("Get captured network requests/responses including request bodies (POST/PUT/PATCH) and response bodies (max 32KB each, truncated if larger). Call enable_network_capture first.").
+		Description("Get captured network requests/responses including request bodies (POST/PUT/PATCH) and response bodies (max 32KB each, truncated if larger). Includes recent buffered requests so you can inspect traffic even if capture was enabled late.").
 		Handler(func(ctx context.Context, input NetworkRequestsInput) ([]agent.NetworkCapture, error) {
-			return s().CapturedRequests(input.Pattern), nil
+			out := s().CapturedRequests(input.Pattern)
+			if input.MaxRecent > 0 && len(out) > input.MaxRecent {
+				out = out[len(out)-input.MaxRecent:]
+			}
+			return out, nil
 		})
 
 	// --- Framework support ---
@@ -804,7 +881,7 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 		Description("Wait for an element to appear in the DOM.").
 		Handler(func(ctx context.Context, input WaitForInput) (*agent.PageResult, error) {
 			if err := s().WaitFor(input.Selector); err != nil {
-				return nil, err
+				return nil, mcpErr(err)
 			}
 			return s().Snapshot()
 		})

@@ -10,12 +10,16 @@ const defaultMaxBodySize = 32 * 1024 // 32KB
 
 // networkState tracks captured network requests for a session.
 type networkState struct {
-	mu       sync.Mutex
-	enabled  bool
-	patterns []string
-	requests []NetworkCapture
-	pending  map[string]*NetworkCapture // requestId -> partial
-	unsub    []func()
+	mu                 sync.Mutex
+	enabled            bool
+	patterns           []string
+	requests           []NetworkCapture
+	history            []NetworkCapture
+	pending            map[string]*NetworkCapture // requestId -> partial
+	pendingAll         map[string]*NetworkCapture
+	unsub              []func()
+	observersInstalled bool
+	historyLimit       int
 }
 
 // EnableNetworkCapture starts capturing XHR/fetch responses matching the given URL patterns.
@@ -30,27 +34,46 @@ func (s *Session) EnableNetworkCapture(patterns ...string) error {
 
 	if s.network == nil {
 		s.network = &networkState{
-			pending: make(map[string]*NetworkCapture),
+			pending:      make(map[string]*NetworkCapture),
+			pendingAll:   make(map[string]*NetworkCapture),
+			historyLimit: 200,
 		}
 	}
 
 	s.network.patterns = patterns
 	s.network.enabled = true
 
-	_, _ = s.page.Call("Network.enable", nil)
+	if err := s.ensureNetworkObserversLocked(); err != nil {
+		return err
+	}
 
-	// Subscribe to network events
-	unsub1 := s.page.OnSession("Network.requestWillBeSent", func(params map[string]any) {
-		s.onRequestWillBeSent(params)
-	})
-	unsub2 := s.page.OnSession("Network.responseReceived", func(params map[string]any) {
-		s.onResponseReceived(params)
-	})
-	unsub3 := s.page.OnSession("Network.loadingFinished", func(params map[string]any) {
-		s.onLoadingFinished(params)
-	})
+	if len(s.network.requests) == 0 && len(s.network.history) > 0 {
+		for _, req := range s.network.history {
+			if len(patterns) == 0 || matchesAnyPattern(req.URL, patterns) {
+				fromHistory := req
+				fromHistory.FromHistory = true
+				s.network.requests = append(s.network.requests, fromHistory)
+			}
+		}
+	}
+	return nil
+}
 
+func (s *Session) ensureNetworkObserversLocked() error {
+	if s.network == nil {
+		s.network = &networkState{pending: make(map[string]*NetworkCapture), pendingAll: make(map[string]*NetworkCapture), historyLimit: 200}
+	}
+	if s.network.observersInstalled {
+		return nil
+	}
+	if _, err := s.page.Call("Network.enable", nil); err != nil {
+		return err
+	}
+	unsub1 := s.page.OnSession("Network.requestWillBeSent", func(params map[string]any) { s.onRequestWillBeSent(params) })
+	unsub2 := s.page.OnSession("Network.responseReceived", func(params map[string]any) { s.onResponseReceived(params) })
+	unsub3 := s.page.OnSession("Network.loadingFinished", func(params map[string]any) { s.onLoadingFinished(params) })
 	s.network.unsub = append(s.network.unsub, unsub1, unsub2, unsub3)
+	s.network.observersInstalled = true
 	return nil
 }
 
@@ -67,6 +90,7 @@ func (s *Session) DisableNetworkCapture() {
 	}
 	s.network.enabled = false
 	s.network.unsub = nil
+	s.network.observersInstalled = false
 }
 
 // CapturedRequests returns captured network requests, optionally filtered by URL pattern.
@@ -108,6 +132,18 @@ func (s *Session) ClearCapturedRequests() {
 	}
 }
 
+func matchesAnyPattern(url string, patterns []string) bool {
+	if len(patterns) == 0 {
+		return true
+	}
+	for _, p := range patterns {
+		if strings.Contains(url, p) {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Session) matchesNetworkPattern(url string) bool {
 	if s.network == nil || !s.network.enabled {
 		return false
@@ -130,7 +166,7 @@ func (s *Session) onRequestWillBeSent(params map[string]any) {
 	}
 	reqURL, _ := req["url"].(string)
 	if !s.matchesNetworkPattern(reqURL) {
-		return
+		// keep collecting request metadata for history even if active capture filter does not match
 	}
 
 	reqID, _ := params["requestId"].(string)
@@ -153,7 +189,10 @@ func (s *Session) onRequestWillBeSent(params map[string]any) {
 	}
 
 	s.network.mu.Lock()
-	s.network.pending[reqID] = capture
+	s.network.pendingAll[reqID] = capture
+	if s.matchesNetworkPattern(reqURL) {
+		s.network.pending[reqID] = capture
+	}
 	s.network.mu.Unlock()
 }
 
@@ -162,19 +201,38 @@ func (s *Session) onResponseReceived(params map[string]any) {
 
 	s.network.mu.Lock()
 	capture, ok := s.network.pending[reqID]
+	allCapture, allOK := s.network.pendingAll[reqID]
 	s.network.mu.Unlock()
 
-	if !ok {
+	if !ok && !allOK {
 		return
 	}
 
 	resp, _ := params["response"].(map[string]any)
 	if resp != nil {
-		if status, ok := resp["status"].(float64); ok {
-			capture.Status = int(status)
+		if status, hasStatus := resp["status"].(float64); hasStatus {
+			if ok {
+				capture.Status = int(status)
+			}
+			if allOK {
+				allCapture.Status = int(status)
+			}
 		}
-		capture.MimeType, _ = resp["mimeType"].(string)
-		capture.ResponseHeaders = extractStringMap(resp, "headers")
+		if mimeType, hasMime := resp["mimeType"].(string); hasMime {
+			if ok {
+				capture.MimeType = mimeType
+			}
+			if allOK {
+				allCapture.MimeType = mimeType
+			}
+		}
+		headers := extractStringMap(resp, "headers")
+		if ok {
+			capture.ResponseHeaders = headers
+		}
+		if allOK {
+			allCapture.ResponseHeaders = headers
+		}
 	}
 }
 
@@ -183,14 +241,20 @@ func (s *Session) onLoadingFinished(params map[string]any) {
 
 	s.network.mu.Lock()
 	capture, ok := s.network.pending[reqID]
+	allCapture, allOK := s.network.pendingAll[reqID]
 	if !ok {
-		s.network.mu.Unlock()
-		return
+		capture = nil
 	}
 	delete(s.network.pending, reqID)
+	if allOK {
+		delete(s.network.pendingAll, reqID)
+	}
 	s.network.mu.Unlock()
+	if !ok && !allOK {
+		return
+	}
 
-	if s.page != nil {
+	if s.page != nil && allCapture != nil {
 		result, err := s.page.Call("Network.getResponseBody", map[string]any{
 			"requestId": reqID,
 		})
@@ -201,17 +265,29 @@ func (s *Session) onLoadingFinished(params map[string]any) {
 			}
 			if err := json.Unmarshal(result, &body); err == nil && !body.Base64Encoded {
 				if len(body.Body) > defaultMaxBodySize {
-					capture.ResponseBody = body.Body[:defaultMaxBodySize]
-					capture.ResponseBodyTruncated = true
+					allCapture.ResponseBody = body.Body[:defaultMaxBodySize]
+					allCapture.ResponseBodyTruncated = true
 				} else {
-					capture.ResponseBody = body.Body
+					allCapture.ResponseBody = body.Body
+				}
+				if capture != nil {
+					capture.ResponseBody = allCapture.ResponseBody
+					capture.ResponseBodyTruncated = allCapture.ResponseBodyTruncated
 				}
 			}
 		}
 	}
 
 	s.network.mu.Lock()
-	s.network.requests = append(s.network.requests, *capture)
+	if allCapture != nil {
+		s.network.history = append(s.network.history, *allCapture)
+		if s.network.historyLimit > 0 && len(s.network.history) > s.network.historyLimit {
+			s.network.history = s.network.history[len(s.network.history)-s.network.historyLimit:]
+		}
+	}
+	if capture != nil {
+		s.network.requests = append(s.network.requests, *capture)
+	}
 	s.network.mu.Unlock()
 }
 

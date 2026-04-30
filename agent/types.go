@@ -130,6 +130,48 @@ type NetworkCapture struct {
 	ResponseBody          string            `json:"response_body,omitempty"`
 	RequestBodyTruncated  bool              `json:"request_body_truncated,omitempty"`
 	ResponseBodyTruncated bool              `json:"response_body_truncated,omitempty"`
+	FromHistory           bool              `json:"from_history,omitempty"`
+}
+
+// SessionStatus provides health and diagnostics for the active browser session.
+type SessionStatus struct {
+	BrowserAlive        bool   `json:"browser_alive"`
+	SessionAlive        bool   `json:"session_alive"`
+	CurrentURL          string `json:"current_url,omitempty"`
+	PendingRequests     int    `json:"pending_requests"`
+	InFlightCommands    int    `json:"inflight_command_count"`
+	ConsecutiveTimeouts int    `json:"consecutive_timeouts"`
+	LastError           string `json:"last_error,omitempty"`
+	LastSuccessAt       string `json:"last_success_at,omitempty"`
+	LastRecoveryAt      string `json:"last_recovery_at,omitempty"`
+}
+
+// OperationError captures structured context for action failures.
+type OperationError struct {
+	Phase         string `json:"phase"`
+	Cause         string `json:"cause"`
+	URL           string `json:"url,omitempty"`
+	StatusCode    int    `json:"status_code,omitempty"`
+	Detail        string `json:"detail,omitempty"`
+	OriginalError string `json:"original_error"`
+}
+
+func (e *OperationError) Error() string {
+	if e == nil {
+		return ""
+	}
+	msg := e.Phase + " failed"
+	if e.Cause != "" {
+		msg += ": " + e.Cause
+	}
+	if e.URL != "" {
+		msg += " url=" + e.URL
+	}
+	if e.Detail != "" {
+		msg += " detail=" + e.Detail
+	}
+	msg += " err=" + e.OriginalError
+	return msg
 }
 
 // --- Semantic Form types ---

@@ -1,6 +1,148 @@
 {
   "project_id": "Scout",
-  "version": 1,
-  "task_states": {},
-  "updated_at": "2026-03-21T17:45:34.743876+01:00"
+  "version": 4,
+  "task_states": {
+    "task-action-cost-estimation": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-advanced-interaction-tools-—-hover,-drag,-select,-scroll": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-agent-action-replay-—-deterministic-playback": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-agent-package-—-ai-optimized-session-api": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-cli-—-scout-command-line-interface": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-core-browser-automation-engine": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-core-foundation": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-distribution-—-goreleaser,-homebrew,-install-script": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-dom-diff-with-change-classification": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-framework-detection-\u0026-state-extraction": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-mcp-channels-—-proactive-push-notifications": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-mcp-dynamic-tool-registration-via-list_changed": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-mcp-elicitation-support": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-mcp-resilience,-diagnostics,-and-network-history-improvements": {
+      "status": "done",
+      "path": "",
+      "owner": "ai-agent",
+      "evidence": [
+        "Implemented reset/status tools, timeout auto-recovery, detailed error wrapping, and network request history buffering. Verified with go test -short ./agent/...."
+      ],
+      "started_at": "2026-04-30T09:18:51.242763+02:00",
+      "completed_at": "2026-04-30T09:24:24.116718+02:00",
+      "elapsed_minutes": 5
+    },
+    "task-mcp-server-—-scout-mcp-serve": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-mcp-streaming-tool-results": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-mcp-structured-content-responses": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-mcp-tool-annotations": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-middleware-system-—-resilience,-auth,-stealth,-network": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-multi-tab-coordination": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-network-request/response-capture": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-persistent-browser-profiles": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-screenshot-compression-\u0026-media-capture": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-semantic-form-filling-\u0026-discovery": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-shadow-dom-traversal": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-visual-grounding-—-annotated-screenshots": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-webdriver-bidi-—-cross-browser-support-(firefox,-safari)": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    }
+  },
+  "updated_at": "2026-04-30T09:24:24.116718+02:00"
 }

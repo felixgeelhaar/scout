@@ -13,6 +13,10 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
+	"net"
+	"net/url"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,22 +26,33 @@ import (
 // Session manages a stateful browser automation session for an agent.
 // All methods are goroutine-safe via an internal mutex.
 type Session struct {
-	mu             sync.Mutex
-	browser        browse.Browser
-	page           *browse.Page
-	timeout        time.Duration
-	contentOpts    ContentOptions
-	network        *networkState
-	diffInstalled  bool
-	closed         bool
-	stealth        bool
-	tabs           *tabManager
-	recording      *recording
-	history        []HistoryEntry
-	tracing        bool
-	trace          *traceState
-	frameID        string
-	frameContextID int64
+	mu                  sync.Mutex
+	browser             browse.Browser
+	page                *browse.Page
+	timeout             time.Duration
+	contentOpts         ContentOptions
+	network             *networkState
+	diffInstalled       bool
+	closed              bool
+	stealth             bool
+	tabs                *tabManager
+	recording           *recording
+	history             []HistoryEntry
+	tracing             bool
+	trace               *traceState
+	frameID             string
+	frameContextID      int64
+	headless            bool
+	userAgent           string
+	viewport            [2]int
+	allowPrivateIPs     bool
+	remoteCDP           string
+	recoverTimeoutN     int
+	consecutiveTimeouts int
+	lastError           string
+	lastSuccessAt       time.Time
+	lastRecoveryAt      time.Time
+	inflightCommands    int
 }
 
 // SessionConfig configures a new Session.
@@ -80,10 +95,17 @@ func NewSession(cfg SessionConfig) (*Session, error) {
 	}
 
 	return &Session{
-		browser:     engine,
-		timeout:     cfg.Timeout,
-		contentOpts: DefaultContentOptions(),
-		stealth:     cfg.Stealth,
+		browser:         engine,
+		timeout:         cfg.Timeout,
+		contentOpts:     DefaultContentOptions(),
+		stealth:         cfg.Stealth,
+		headless:        cfg.Headless,
+		userAgent:       cfg.UserAgent,
+		viewport:        cfg.Viewport,
+		allowPrivateIPs: cfg.AllowPrivateIPs,
+		remoteCDP:       cfg.RemoteCDP,
+		network:         &networkState{pending: make(map[string]*NetworkCapture), pendingAll: make(map[string]*NetworkCapture), historyLimit: 200},
+		recoverTimeoutN: 3,
 	}, nil
 }
 
@@ -94,11 +116,193 @@ func NewSessionFromBrowser(b browse.Browser, cfg SessionConfig) *Session {
 		cfg.Timeout = 30 * time.Second
 	}
 	return &Session{
-		browser:     b,
-		timeout:     cfg.Timeout,
-		contentOpts: DefaultContentOptions(),
-		stealth:     cfg.Stealth,
+		browser:         b,
+		timeout:         cfg.Timeout,
+		contentOpts:     DefaultContentOptions(),
+		stealth:         cfg.Stealth,
+		headless:        cfg.Headless,
+		userAgent:       cfg.UserAgent,
+		viewport:        cfg.Viewport,
+		allowPrivateIPs: cfg.AllowPrivateIPs,
+		remoteCDP:       cfg.RemoteCDP,
+		network:         &networkState{pending: make(map[string]*NetworkCapture), pendingAll: make(map[string]*NetworkCapture), historyLimit: 200},
+		recoverTimeoutN: 3,
 	}
+}
+
+func (s *Session) runWithRecovery(phase string, fn func() error) error {
+	s.inflightCommands++
+	err := fn()
+	s.inflightCommands--
+	if err == nil {
+		s.consecutiveTimeouts = 0
+		s.lastSuccessAt = time.Now()
+		return nil
+	}
+
+	wrapped := s.wrapDetailedError(phase, err)
+	s.lastError = wrapped.Error()
+	if isTimeoutLike(err) {
+		s.consecutiveTimeouts++
+		if s.consecutiveTimeouts >= s.recoverTimeoutN {
+			if resetErr := s.resetLocked(); resetErr == nil {
+				s.lastRecoveryAt = time.Now()
+				s.consecutiveTimeouts = 0
+				return fmt.Errorf("%w (auto-recovered)", wrapped)
+			}
+		}
+	}
+	return wrapped
+}
+
+func isTimeoutLike(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return containsAny(msg, "timeout", "deadline exceeded", "context canceled")
+}
+
+func containsAny(s string, subs ...string) bool {
+	for _, sub := range subs {
+		if sub != "" && strings.Contains(strings.ToLower(s), strings.ToLower(sub)) {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Session) wrapDetailedError(phase string, err error) error {
+	msg := err.Error()
+	op := &OperationError{Phase: phase, OriginalError: msg}
+	if u, parseErr := url.Parse(msg); parseErr == nil && u != nil && u.Host != "" {
+		op.URL = u.String()
+	}
+	if opErr, ok := err.(*net.OpError); ok {
+		op.Cause = "connection_error"
+		op.Detail = opErr.Op
+	}
+	if strings.Contains(strings.ToLower(msg), "404") {
+		op.Cause = "http_404"
+		op.StatusCode = 404
+	}
+	if strings.Contains(strings.ToLower(msg), "403") {
+		op.Cause = "http_403"
+		op.StatusCode = 403
+	}
+	if strings.Contains(strings.ToLower(msg), "401") {
+		op.Cause = "http_401"
+		op.StatusCode = 401
+	}
+	if strings.Contains(strings.ToLower(msg), "connection refused") {
+		op.Cause = "connection_refused"
+	}
+	if strings.Contains(strings.ToLower(msg), "timeout") || strings.Contains(strings.ToLower(msg), "deadline exceeded") {
+		op.Cause = "timeout"
+	}
+	if strings.Contains(strings.ToLower(msg), "browser") && strings.Contains(strings.ToLower(msg), "closed") {
+		op.Cause = "browser_closed"
+	}
+	if op.Cause == "" {
+		op.Cause = "unknown"
+	}
+	if op.StatusCode == 0 {
+		for _, token := range strings.Fields(msg) {
+			if len(token) == 3 {
+				if n, convErr := strconv.Atoi(token); convErr == nil && n >= 100 && n <= 599 {
+					op.StatusCode = n
+					break
+				}
+			}
+		}
+	}
+	return op
+}
+
+func (s *Session) resetLocked() error {
+	if s.page != nil {
+		_ = s.page.Close()
+		s.page = nil
+	}
+	if s.browser != nil {
+		_ = s.browser.Close()
+	}
+	opts := []browse.Option{browse.WithHeadless(s.headless), browse.WithTimeout(s.timeout)}
+	if s.userAgent != "" {
+		opts = append(opts, browse.WithUserAgent(s.userAgent))
+	}
+	if s.viewport[0] > 0 && s.viewport[1] > 0 {
+		opts = append(opts, browse.WithViewport(s.viewport[0], s.viewport[1]))
+	}
+	if s.allowPrivateIPs {
+		opts = append(opts, browse.WithAllowPrivateIPs(true))
+	}
+	if s.remoteCDP != "" {
+		opts = append(opts, browse.WithRemoteCDP(s.remoteCDP))
+	}
+	engine := browse.New(opts...)
+	if err := engine.Launch(); err != nil {
+		return fmt.Errorf("failed to reset session: %w", err)
+	}
+	s.browser = engine
+	s.diffInstalled = false
+	s.frameID = ""
+	s.frameContextID = 0
+	if s.network != nil {
+		s.network.enabled = false
+		s.network.unsub = nil
+		s.network.pending = make(map[string]*NetworkCapture)
+		s.network.pendingAll = make(map[string]*NetworkCapture)
+		s.network.observersInstalled = false
+	}
+	return nil
+}
+
+// Reset force-resets browser and page state.
+func (s *Session) Reset() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return fmt.Errorf("session is closed")
+	}
+	err := s.resetLocked()
+	if err == nil {
+		s.lastRecoveryAt = time.Now()
+		s.consecutiveTimeouts = 0
+		s.lastError = ""
+	}
+	return err
+}
+
+// Status returns current session/browser health information.
+func (s *Session) Status() *SessionStatus {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	st := &SessionStatus{
+		BrowserAlive:        s.browser != nil && !s.closed,
+		SessionAlive:        !s.closed,
+		InFlightCommands:    s.inflightCommands,
+		ConsecutiveTimeouts: s.consecutiveTimeouts,
+		LastError:           s.lastError,
+	}
+	if !s.lastSuccessAt.IsZero() {
+		st.LastSuccessAt = s.lastSuccessAt.Format(time.RFC3339)
+	}
+	if !s.lastRecoveryAt.IsZero() {
+		st.LastRecoveryAt = s.lastRecoveryAt.Format(time.RFC3339)
+	}
+	if s.page != nil {
+		if u, err := s.page.URL(); err == nil {
+			st.CurrentURL = u
+		}
+	}
+	if s.network != nil {
+		s.network.mu.Lock()
+		st.PendingRequests = len(s.network.pending)
+		s.network.mu.Unlock()
+	}
+	return st
 }
 
 // Close shuts down the browser and releases all resources.
@@ -133,6 +337,9 @@ func (s *Session) ensurePage() error {
 		s.applyStealthPatches(page)
 	}
 	s.page = page
+	if s.network != nil {
+		_ = s.ensureNetworkObserversLocked()
+	}
 	return nil
 }
 
@@ -168,9 +375,12 @@ func (s *Session) Navigate(url string) (*PageResult, error) {
 	s.frameContextID = 0
 
 	// Navigate explicitly so we attach event listeners before the load fires
-	if err := page.Navigate(url); err != nil {
+	if err := s.runWithRecovery("navigate", func() error { return page.Navigate(url) }); err != nil {
 		s.traceAfterAction(start, before, "navigate", "", "", url, err)
 		return nil, fmt.Errorf("failed to navigate to %s: %w", url, err)
+	}
+	if s.network != nil {
+		s.network.observersInstalled = false
 	}
 
 	s.traceAfterAction(start, before, "navigate", "", "", url, nil)

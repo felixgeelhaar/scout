@@ -2,6 +2,7 @@ package agent
 
 import (
 	"fmt"
+	"net"
 	"testing"
 	"time"
 )
@@ -246,5 +247,62 @@ func TestTraceAfterAction_MultipleEvents(t *testing.T) {
 		if ev.Index != i {
 			t.Errorf("event[%d].Index = %d", i, ev.Index)
 		}
+	}
+}
+
+func TestStatus_BasicFields(t *testing.T) {
+	s := newTestSession()
+	s.lastError = "boom"
+	s.consecutiveTimeouts = 2
+	s.inflightCommands = 1
+	st := s.Status()
+	if st == nil {
+		t.Fatal("expected status")
+	}
+	if !st.SessionAlive {
+		t.Fatal("expected session_alive=true")
+	}
+	if st.BrowserAlive {
+		t.Fatal("expected browser_alive=false for test session without browser")
+	}
+	if st.LastError != "boom" {
+		t.Fatalf("last_error: got %q", st.LastError)
+	}
+	if st.ConsecutiveTimeouts != 2 {
+		t.Fatalf("consecutive_timeouts: got %d", st.ConsecutiveTimeouts)
+	}
+	if st.InFlightCommands != 1 {
+		t.Fatalf("inflight_command_count: got %d", st.InFlightCommands)
+	}
+}
+
+func TestWrapDetailedError_Timeout(t *testing.T) {
+	s := newTestSession()
+	err := s.wrapDetailedError("navigate", fmt.Errorf("context deadline exceeded while loading"))
+	op, ok := err.(*OperationError)
+	if !ok {
+		t.Fatalf("expected *OperationError, got %T", err)
+	}
+	if op.Cause != "timeout" {
+		t.Fatalf("cause: got %q", op.Cause)
+	}
+	if op.Phase != "navigate" {
+		t.Fatalf("phase: got %q", op.Phase)
+	}
+}
+
+func TestWrapDetailedError_NetOp(t *testing.T) {
+	s := newTestSession()
+	netErr := &net.OpError{Op: "dial", Err: fmt.Errorf("connection refused")}
+	err := s.wrapDetailedError("navigate", netErr)
+	op, ok := err.(*OperationError)
+	if !ok {
+		t.Fatalf("expected *OperationError, got %T", err)
+	}
+	if op.Cause != "connection_refused" {
+		t.Fatalf("cause: got %q", op.Cause)
+	}
+	if op.Detail != "dial" {
+		t.Fatalf("detail: got %q", op.Detail)
 	}
 }
