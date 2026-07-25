@@ -17,10 +17,12 @@ on:
       - 'LICENSE'
   pull_request:
     branches: [main]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
+    # No paths-ignore here: branch protection requires this workflow's status
+    # checks (ci / Lint, Test, Build, Security (nox)), and a docs-only PR that
+    # skips the whole workflow never reports them — so the PR is unmergeable
+    # forever without an admin override. Running CI on docs PRs is cheap (no
+    # code changed → cache hits) and keeps them mergeable; the push trigger
+    # above still skips docs, saving minutes on merges.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
