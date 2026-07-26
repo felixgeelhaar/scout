@@ -93,16 +93,26 @@ docker_manifests:
 # a personal tap sits outside it and answers 403. scout.rb currently exists in
 # BOTH taps, so whichever a user tapped first wins and the two drift apart —
 # this makes the org copy the one that gets updated.
-brews:
+# homebrew_casks replaces brews (deprecated in GoReleaser v2.16). Homebrew's
+# own guidance is that a cask, not a formula, is the right vehicle for a
+# pre-compiled binary -- the formula path generated something that only
+# pretended to build from source.
+homebrew_casks:
   - repository:
       owner: klarlabs-studio
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    directory: Formula
     homepage: "https://github.com/klarlabs-studio/scout"
     description: "MCP server for AI-powered browser automation"
     license: "MIT"
-    install: |
-      bin.install "scout"
-    test: |
-      assert_match version.to_s, shell_output("#{bin}/scout --version")
+    binaries:
+      - scout
+    hooks:
+      post:
+        # The release archives are not notarized, so Gatekeeper quarantines the
+        # binary on first run. A formula was never subject to this; a cask is,
+        # so without this scout refuses to start.
+        install: |
+          if OS.mac?
+            system_command "xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/scout"]
+          end
