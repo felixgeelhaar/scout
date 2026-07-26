@@ -90,7 +90,7 @@ docker_manifests:
 
 brews:
   - repository:
-      owner: klarlabs-studio
+      owner: felixgeelhaar
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     directory: Formula
