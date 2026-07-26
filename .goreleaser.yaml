@@ -98,7 +98,16 @@ docker_manifests:
 # pre-compiled binary -- the formula path generated something that only
 # pretended to build from source.
 homebrew_casks:
-  - repository:
+    # The cask is scout-mcp, not scout: homebrew/cask already ships a
+    # `scout` (Scout-App, a Sass processor), so `brew install --cask scout`
+    # silently resolves to that one instead of this. As a formula the
+    # clash produced a disambiguation warning; as a cask it just returns
+    # the wrong product. The installed binary stays `scout` -- the
+    # collision is in Homebrew's namespace, not on anyone's PATH.
+    #
+    # cask_renames.json in the tap carries existing `scout` installs over.
+  - name: scout-mcp
+    repository:
       owner: klarlabs-studio
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"

@@ -18,7 +18,7 @@
 A single statically-linked `scout` binary gives you a CLI, an 87-tool MCP server (so any MCP-aware agent — Claude Desktop, Cursor, Cline, custom — has a browser), a conversational chat UI, and a Go library with Gin-like middleware composition. Same engine, four access points.
 
 ```bash
-brew install klarlabs-studio/tap/scout
+brew install --cask klarlabs-studio/tap/scout-mcp
 ```
 
 ## vs. Playwright
@@ -56,7 +56,7 @@ cd ui && npm install && npm run dev  # open http://localhost:3000
 
 ```bash
 # Homebrew
-brew install klarlabs-studio/tap/scout
+brew install --cask klarlabs-studio/tap/scout-mcp
 
 # Direct binary
 curl -fsSL https://raw.githubusercontent.com/klarlabs-studio/scout/main/install.sh | bash
