@@ -88,9 +88,14 @@ docker_manifests:
       - "ghcr.io/klarlabs-studio/scout:{{ .Version }}-amd64"
       - "ghcr.io/klarlabs-studio/scout:{{ .Version }}-arm64"
 
+# The formula goes to the tap owned by the org that owns this repo, which is
+# also the scope the org secret behind HOMEBREW_TAP_GITHUB_TOKEN can write to;
+# a personal tap sits outside it and answers 403. scout.rb currently exists in
+# BOTH taps, so whichever a user tapped first wins and the two drift apart —
+# this makes the org copy the one that gets updated.
 brews:
   - repository:
-      owner: felixgeelhaar
+      owner: klarlabs-studio
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     directory: Formula
