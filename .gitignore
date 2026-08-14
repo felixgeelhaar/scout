@@ -44,3 +44,7 @@ findings.json
 ui/dist/
 ui/node_modules/
 ui/tsconfig.tsbuildinfo
+
+# nox scan artifacts — generated, not source
+ai.inventory.json
+findings.json
