@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -113,6 +114,10 @@ type ScreenshotInput struct {
 	Quality  int    `json:"quality,omitempty" jsonschema:"description=JPEG quality 1-100. Forces JPEG format. Lower = smaller file. Default auto-compresses to fit 200KB."`
 	MaxWidth int    `json:"max_width,omitempty" jsonschema:"description=Maximum image width in pixels. Downscales proportionally. Good values: 800 or 1024."`
 	FullPage bool   `json:"full_page,omitempty" jsonschema:"description=Capture the entire scrollable page instead of just the viewport."`
+	// OutputPath / SaveToDisk turn the capture into a file the human can be
+	// shown, rather than base64 that only ever reaches the model (#79).
+	OutputPath string `json:"output_path,omitempty" jsonschema:"description=Write the image here and return the path instead of base64. Implies save_to_disk. Relative paths resolve against the OS temp dir."`
+	SaveToDisk bool   `json:"save_to_disk,omitempty" jsonschema:"description=Write the image to a generated path and return that path instead of base64 - use when the capture is for the user to see. Disables the size cap, since it exists only to fit base64 into tool-result token limits."`
 }
 
 type SetViewportInput struct {
@@ -255,6 +260,9 @@ type NetworkSummaryInput struct {
 
 type AnnotatedScreenshotInput struct {
 	IncludeImage bool `json:"include_image,omitempty" jsonschema:"description=Include base64 image data in response. Default false to avoid large responses. Use screenshot tool separately if you need the image."`
+	// Same purpose as on ScreenshotInput: hand the human a file (#79).
+	OutputPath string `json:"output_path,omitempty" jsonschema:"description=Write the labelled image here and return the path. Implies include_image and save_to_disk."`
+	SaveToDisk bool   `json:"save_to_disk,omitempty" jsonschema:"description=Write the labelled image to a generated path and return that path instead of base64. Implies include_image."`
 }
 
 type AnnotatedScreenshotResult struct {
@@ -262,6 +270,8 @@ type AnnotatedScreenshotResult struct {
 	Elements   []agent.AnnotatedElement `json:"elements"`
 	Count      int                      `json:"count"`
 	LabelScope string                   `json:"label_scope"`
+	// ImagePath is set instead of Image when the capture was written to disk.
+	ImagePath string `json:"image_path,omitempty"`
 }
 
 type ClickLabelInput struct {
@@ -901,7 +911,7 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 
 	srv.Tool("screenshot").
 		ReadOnly().
-		Description("Capture a screenshot. Defaults: JPEG quality 60, max_width 1024, 80KB cap (~20k tokens base64) so result fits MCP tool-result token limits. Pass quality / max_width to override; on overflow the image is progressively downscaled rather than failing. Returns base64 data URL.").
+		Description("Capture a screenshot. Returns a base64 data URL by default: JPEG quality 60, max_width 1024, 80KB cap (~20k tokens) so the result fits MCP tool-result token limits, progressively downscaling on overflow rather than failing. Set save_to_disk (or output_path) to write a PNG and return its path instead — that is what to use when the capture is meant for the user to SEE, since base64 lands in the model's context and never reaches them. Writing to disk also lifts the size cap and the width default, because both exist only to fit base64 through the tool result.").
 		Handler(func(ctx context.Context, input ScreenshotInput) (string, error) {
 			if err := maybeNavigate(input.URL); err != nil {
 				return "", err
@@ -910,8 +920,10 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 			if page == nil {
 				return "", fmt.Errorf("no page open")
 			}
+			toDisk := input.SaveToDisk || input.OutputPath != ""
+
 			maxWidth := input.MaxWidth
-			if maxWidth == 0 {
+			if maxWidth == 0 && !toDisk {
 				maxWidth = 1024 // sane default — keeps result under ~80KB without aggressive quality cuts
 			}
 			opts := browse.ScreenshotOptions{
@@ -921,12 +933,25 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 				Format:   "jpeg",
 				Quality:  60,
 			}
+			if toDisk {
+				// The cap and the JPEG default exist so base64 fits the
+				// tool-result token limit. Once the bytes go to a file that
+				// constraint is gone, and applying it anyway silently degrades a
+				// tall full_page capture for a reason that no longer holds (#79).
+				opts.MaxSize = 0
+				opts.Format = "png"
+				opts.Quality = 0
+			}
 			if input.Quality > 0 {
 				opts.Quality = input.Quality
+				opts.Format = "jpeg" // quality is a JPEG control
 			}
 			data, err := page.ScreenshotWithOptions(opts)
 			if err != nil {
 				return "", err
+			}
+			if toDisk {
+				return writeCapture(input.OutputPath, "screenshot", opts.Format, data)
 			}
 			mime := "image/jpeg"
 			if opts.Format == "png" {
@@ -947,6 +972,16 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 				Elements:   result.Elements,
 				Count:      result.Count,
 				LabelScope: result.LabelScope,
+			}
+			if input.SaveToDisk || input.OutputPath != "" {
+				// Writing implies include_image: asking for a file and getting
+				// only an element list would be a silent no-op.
+				path, werr := writeCapture(input.OutputPath, "annotated", "png", result.Image)
+				if werr != nil {
+					return nil, werr
+				}
+				out.ImagePath = path
+				return out, nil
 			}
 			if input.IncludeImage {
 				out.Image = "data:image/png;base64," + base64.StdEncoding.EncodeToString(result.Image)
@@ -1433,4 +1468,31 @@ WORKFLOW: navigate first, then use other tools. Use 'dismiss_cookies' after navi
 		return err
 	}
 	return nil
+}
+
+// writeCapture persists an image and returns its path, so a capture can be
+// handed to the human instead of landing in the model's context as base64 (#79).
+//
+// A relative or empty path resolves under the OS temp dir, matching
+// start_screen_recording's output_dir, which is the precedent for this in scout.
+func writeCapture(outputPath, kind, format string, data []byte) (string, error) {
+	if format == "" {
+		format = "png"
+	}
+	path := outputPath
+	if path == "" {
+		path = filepath.Join(os.TempDir(),
+			fmt.Sprintf("scout-%s-%d.%s", kind, time.Now().UnixNano(), format))
+	} else if !filepath.IsAbs(path) {
+		path = filepath.Join(os.TempDir(), path)
+	}
+	// Create the parent so an explicit output_path into a fresh directory works
+	// rather than failing on a missing dir the caller cannot see.
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return "", fmt.Errorf("screenshot: create output dir: %w", err)
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return "", fmt.Errorf("screenshot: write %s: %w", path, err)
+	}
+	return path, nil
 }
