@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -163,5 +165,78 @@ func TestResolveViewport(t *testing.T) {
 				t.Errorf("got (%d,%d,%g,%v), want (%d,%d,%g,%v)", w, h, scale, mobile, tt.wantW, tt.wantH, tt.wantScale, tt.wantMobile)
 			}
 		})
+	}
+}
+
+// #79: a capture meant for the human has to become a file. base64 renders for
+// the model and never reaches the user, so returning it was the whole problem.
+func TestWriteCapture_GeneratesPathWhenNoneGiven(t *testing.T) {
+	got, err := writeCapture("", "screenshot", "png", []byte("\x89PNG-ish"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(got) })
+
+	if !filepath.IsAbs(got) {
+		t.Errorf("returned path should be absolute, got %q", got)
+	}
+	if filepath.Ext(got) != ".png" {
+		t.Errorf("extension should follow the format, got %q", got)
+	}
+	if _, err := os.Stat(got); err != nil {
+		t.Fatalf("file was not written: %v", err)
+	}
+	data, _ := os.ReadFile(got)
+	if string(data) != "\x89PNG-ish" {
+		t.Errorf("bytes were altered on the way to disk: %q", data)
+	}
+}
+
+// A relative path resolves under the temp dir, matching output_dir on
+// start_screen_recording — the existing precedent for this in scout.
+func TestWriteCapture_RelativeResolvesUnderTemp(t *testing.T) {
+	got, err := writeCapture(filepath.Join("scout-test-rel", "shot.png"), "screenshot", "png", []byte("x"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(filepath.Join(os.TempDir(), "scout-test-rel")) })
+
+	if !strings.HasPrefix(got, os.TempDir()) {
+		t.Errorf("relative path should resolve under the temp dir, got %q", got)
+	}
+}
+
+// An explicit path into a directory that does not exist yet must work; failing
+// on a missing parent the caller cannot see would be a poor contract.
+func TestWriteCapture_CreatesMissingParent(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "nested", "deeper")
+	want := filepath.Join(dir, "shot.png")
+
+	got, err := writeCapture(want, "screenshot", "png", []byte("x"))
+	if err != nil {
+		t.Fatalf("should create the parent directory: %v", err)
+	}
+	if got != want {
+		t.Errorf("an absolute path must be honoured exactly: got %q want %q", got, want)
+	}
+	if _, err := os.Stat(want); err != nil {
+		t.Fatalf("file missing: %v", err)
+	}
+}
+
+// Two captures in the same run must not collide.
+func TestWriteCapture_PathsAreUnique(t *testing.T) {
+	a, err := writeCapture("", "screenshot", "png", []byte("a"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := writeCapture("", "screenshot", "png", []byte("b"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(a); _ = os.Remove(b) })
+
+	if a == b {
+		t.Fatalf("generated paths collided: %q", a)
 	}
 }
