@@ -52,12 +52,3 @@ func applyMCPToolFilter(srv *mcp.Server, opts mcpServeOptions) {
 		}
 	}
 }
-
-func mcpToolNames(srv *mcp.Server) []string {
-	tools := srv.Tools()
-	names := make([]string, len(tools))
-	for i, t := range tools {
-		names[i] = t.Name
-	}
-	return names
-}

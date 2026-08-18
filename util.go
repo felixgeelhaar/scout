@@ -54,9 +54,7 @@ func SanitizeCapturePath(outputPath, kind, ext string) (string, error) {
 	if ext == "" {
 		ext = "bin"
 	}
-	if strings.HasPrefix(ext, ".") {
-		ext = strings.TrimPrefix(ext, ".")
-	}
+	ext = strings.TrimPrefix(ext, ".")
 	if strings.TrimSpace(outputPath) == "" {
 		return filepath.Join(os.TempDir(),
 			fmt.Sprintf("scout-%s-%d.%s", kind, time.Now().UnixNano(), ext)), nil

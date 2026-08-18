@@ -11,6 +11,15 @@ import (
 	"go.klarlabs.de/mcp"
 )
 
+func mcpToolNames(srv *mcp.Server) []string {
+	tools := srv.Tools()
+	names := make([]string, len(tools))
+	for i, t := range tools {
+		names[i] = t.Name
+	}
+	return names
+}
+
 func TestCuratedMCPTools_NoDuplicatesAndNamedBatch(t *testing.T) {
 	seen := map[string]struct{}{}
 	for _, n := range curatedMCPTools {
