@@ -21,7 +21,6 @@ import (
 func main() {
 	// Start a local test server with multiple pages
 	ts := startTestServer()
-	defer ts.Close()
 	fmt.Printf("Test server running at %s\n\n", ts.URL)
 
 	engine := browse.Default(
@@ -29,7 +28,7 @@ func main() {
 		browse.WithViewport(1024, 768),
 	)
 	engine.MustLaunch()
-	defer engine.Close()
+	closeEngine := func() { _ = engine.Close() }
 
 	// Global middleware: slow motion for demo visibility
 	engine.Use(middleware.SlowMotion(200 * time.Millisecond))
@@ -59,7 +58,7 @@ func main() {
 		c.MustNavigate(ts.URL + "/search")
 		c.El("#query").MustInput("browse-go")
 		c.El("button").MustClick()
-		c.WaitStable()
+		_ = c.WaitStable()
 
 		result := c.El("#result").MustText()
 		fmt.Printf("[forms/fill-search] Search result: %s\n", result)
@@ -79,12 +78,16 @@ func main() {
 	fmt.Println("--- Running all tasks ---")
 	if err := engine.RunAll(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		closeEngine()
+		ts.Close()
 		os.Exit(1)
 	}
 	fmt.Println("\n--- All tasks completed ---")
 
 	// Cleanup screenshot
-	os.Remove("demo-screenshot.png")
+	_ = os.Remove("demo-screenshot.png")
+	closeEngine()
+	ts.Close()
 }
 
 func startTestServer() *httptest.Server {
@@ -92,7 +95,7 @@ func startTestServer() *httptest.Server {
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, `<!DOCTYPE html>
+		_, _ = fmt.Fprint(w, `<!DOCTYPE html>
 <html>
 <head><title>Browse-Go Demo</title></head>
 <body>
@@ -109,7 +112,7 @@ func startTestServer() *httptest.Server {
 
 	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, `<!DOCTYPE html>
+		_, _ = fmt.Fprint(w, `<!DOCTYPE html>
 <html>
 <head><title>Search</title></head>
 <body>
