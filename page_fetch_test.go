@@ -65,6 +65,45 @@ func TestFetchInterceptorPatterns(t *testing.T) {
 	}
 }
 
+func TestURLPolicyVerdict(t *testing.T) {
+	v := URLValidator{AllowPrivateIPs: false}
+	blocked := []InterceptedRequest{
+		{URL: "http://127.0.0.1/x", ResourceType: "XHR"},
+		{URL: "http://169.254.169.254/latest/meta-data", ResourceType: "Fetch"},
+		{URL: "http://10.0.0.1/api", ResourceType: "Image"},
+		{URL: "file:///etc/passwd", ResourceType: "Document"},
+		{URL: "javascript:alert(1)", ResourceType: "Document"},
+		{URL: "data:text/html,hi", ResourceType: "Document"},
+		{URL: "ws://127.0.0.1:1", ResourceType: "WebSocket"},
+	}
+	for _, r := range blocked {
+		got := urlPolicyVerdict(v, r)
+		if !got.Block {
+			t.Errorf("urlPolicyVerdict(%+v) allowed, want block", r)
+		}
+	}
+
+	allowed := []InterceptedRequest{
+		{URL: "https://example.com/a.js", ResourceType: "Script"},
+		{URL: "https://example.com/", ResourceType: "Document"},
+		{URL: "data:image/png;base64,xx", ResourceType: "Image"},
+		{URL: "blob:https://example.com/uuid", ResourceType: "Image"},
+		{URL: "about:blank", ResourceType: "Document"},
+	}
+	for _, r := range allowed {
+		got := urlPolicyVerdict(v, r)
+		if got.Block {
+			t.Errorf("urlPolicyVerdict(%+v) blocked, want allow", r)
+		}
+	}
+
+	open := URLValidator{AllowPrivateIPs: true}
+	got := urlPolicyVerdict(open, InterceptedRequest{URL: "http://127.0.0.1/", ResourceType: "XHR"})
+	if got.Block {
+		t.Error("AllowPrivateIPs should permit loopback XHR")
+	}
+}
+
 func TestRequestVerdictSameOriginAsTop(t *testing.T) {
 	r := InterceptedRequest{URL: "https://api.example.com/v1", TopLevelOrigin: "https://api.example.com"}
 	if !r.SameOriginAsTop() {

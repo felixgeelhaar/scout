@@ -16,6 +16,8 @@ func TestSensitiveUploadReason(t *testing.T) {
 		"/home/user/.netrc",
 		"/etc/shadow",
 		"/etc/sudoers",
+		"/home/user/.env",
+		"/tmp/credentials.json",
 	}
 	for _, p := range blocked {
 		if _, ok := sensitiveUploadReason(p); !ok {

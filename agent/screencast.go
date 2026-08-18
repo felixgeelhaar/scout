@@ -11,6 +11,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	browse "go.klarlabs.de/scout"
 )
 
 // debugScreencast enables verbose tracing of frame arrival. Off in normal builds.
@@ -119,6 +121,12 @@ func (s *Session) StartScreenRecording(opts ScreenRecordingOptions) error {
 	parent := opts.OutputDir
 	if parent == "" {
 		parent = os.TempDir()
+	} else {
+		cleaned, err := browse.SanitizeOutputDir(parent)
+		if err != nil {
+			return err
+		}
+		parent = cleaned
 	}
 	framesDir, err := os.MkdirTemp(parent, "scout-rec-*")
 	if err != nil {

@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	browse "go.klarlabs.de/scout"
 )
 
 // validateUploadPath resolves filePath and refuses to upload something that
@@ -39,37 +41,7 @@ func validateUploadPath(filePath string) (string, error) {
 }
 
 // sensitiveUploadReason reports whether an absolute path names well-known
-// credential material that must never be uploaded, and why. Matching is on the
-// resolved path's directory segments and base name, case-insensitively. It is
-// intentionally a focused denylist of unambiguous secrets (private keys, cloud
-// credentials, system secret files) — things never legitimately uploaded via a
-// browser form.
+// credential material that must never be uploaded, and why.
 func sensitiveUploadReason(absPath string) (string, bool) {
-	lower := strings.ToLower(filepath.ToSlash(absPath))
-	base := filepath.Base(lower)
-	segments := strings.Split(lower, "/")
-
-	sensitiveDirs := map[string]struct{}{
-		".ssh": {}, ".gnupg": {}, ".aws": {}, ".azure": {},
-		".kube": {}, ".docker": {}, "gcloud": {},
-	}
-	for _, seg := range segments {
-		if _, ok := sensitiveDirs[seg]; ok {
-			return "credential directory", true
-		}
-	}
-
-	sensitiveBases := map[string]struct{}{
-		"id_rsa": {}, "id_dsa": {}, "id_ecdsa": {}, "id_ed25519": {},
-		".netrc": {}, ".pgpass": {},
-	}
-	if _, ok := sensitiveBases[base]; ok {
-		return "credential file", true
-	}
-
-	switch lower {
-	case "/etc/shadow", "/etc/gshadow", "/etc/sudoers", "/etc/master.passwd":
-		return "system secret file", true
-	}
-	return "", false
+	return browse.SensitivePathReason(absPath)
 }
