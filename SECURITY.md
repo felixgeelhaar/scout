@@ -14,7 +14,7 @@ Scout launches and controls a Chrome browser process. Be aware of these security
 
 ### URL Validation
 - Navigation and **subresource** requests (XHR, fetch, images, scripts, WebSockets) are re-validated against the URL policy
-- Non-http(s) schemes are blocked (`file://`, `javascript:`; `data:` is blocked for documents, allowed for subresources like images)
+- Non-http(s) schemes are blocked (`file://`, `javascript:`; `data:` is blocked for documents, allowed for subresources like images). Browser-internal schemes (`chrome:`, `chrome-extension:`, `devtools:`) are allowed so Chrome itself can load.
 - Private/loopback/link-local IPs (including `169.254.169.254`) are blocked by default (opt-in via `WithAllowPrivateIPs` / `configure allow_private_ips`)
 - `data:` and `blob:` subresources and `about:blank` are allowed so pages can still render
 

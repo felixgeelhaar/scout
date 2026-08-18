@@ -72,7 +72,7 @@ func assertHasCase(t *testing.T, name string) {
 
 // The default chat tier must be substantially closer to MCP than the
 // small-model core tier. Guard the key capability families the audit called
-// out: multi-tab, network, cookies, eval, frames, form submit, upload,
+// out: multi-tab, network, cookies, frames, form submit, upload,
 // framework detection, and waiting variants.
 func TestCuratedTools_CoversCapabilityFamilies(t *testing.T) {
 	have := map[string]bool{}

@@ -223,6 +223,9 @@ func urlPolicyVerdict(v URLValidator, r InterceptedRequest) RequestVerdict {
 			return RequestVerdict{Block: true, BlockReason: "AccessDenied"}
 		}
 		return RequestVerdict{}
+	case "chrome", "chrome-extension", "devtools":
+		// Browser-internal schemes are not attacker-controlled fetches.
+		return RequestVerdict{}
 	default:
 		return RequestVerdict{Block: true, BlockReason: "AccessDenied"}
 	}

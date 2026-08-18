@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Gate `eval` behind `SCOUT_ENABLE_EVAL=1` for MCP (tool is not registered otherwise) and the chat UI; ExecuteTool also refuses it when the flag is unset.
 - Agent-supplied write paths (`screenshot` `output_path`, playbooks, traces, recordings, profiles) reject path traversal, credential locations, and system directories, and write with mode `0600`.
-- URL policy intercepts every resource type, not just Document navigations, so page JS cannot `fetch()` metadata/private IPs. `data:`/`blob:` subresources and `about:blank` remain allowed.
+- URL policy intercepts every resource type, not just Document navigations, so page JS cannot `fetch()` metadata/private IPs. `data:`/`blob:` subresources, `about:blank`, and browser-internal schemes (`chrome:`, `chrome-extension:`, `devtools:`) remain allowed.
 - Observe/extract/markdown/network (and related) MCP results use the same `_untrusted_page_content` envelope as AG-UI.
 
 ### Changed

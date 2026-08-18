@@ -48,7 +48,11 @@ func TestFetchInterceptorPatterns(t *testing.T) {
 	}
 	got := map[string]bool{}
 	for _, p := range pats {
-		got[p["resourceType"].(string)] = true
+		rt, ok := p["resourceType"].(string)
+		if !ok {
+			t.Fatalf("pattern missing resourceType: %+v", p)
+		}
+		got[rt] = true
 	}
 	if !got["Document"] || !got["Image"] {
 		t.Errorf("patterns missing a type: %+v", pats)
@@ -89,6 +93,8 @@ func TestURLPolicyVerdict(t *testing.T) {
 		{URL: "data:image/png;base64,xx", ResourceType: "Image"},
 		{URL: "blob:https://example.com/uuid", ResourceType: "Image"},
 		{URL: "about:blank", ResourceType: "Document"},
+		{URL: "chrome-extension://id/page.html", ResourceType: "Document"},
+		{URL: "chrome://settings/", ResourceType: "Document"},
 	}
 	for _, r := range allowed {
 		got := urlPolicyVerdict(v, r)

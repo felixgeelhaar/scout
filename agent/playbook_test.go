@@ -116,7 +116,9 @@ func TestLoadPlaybook_NotFound(t *testing.T) {
 func TestLoadPlaybook_InvalidJSON(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.json")
-	os.WriteFile(path, []byte("not json"), 0o600)
+	if err := os.WriteFile(path, []byte("not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	_, err := LoadPlaybook(path)
 	if err == nil {
