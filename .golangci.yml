@@ -38,6 +38,9 @@ linters:
       # errors, os.Exit in main). Not part of the shipped library/CLI
       # surface; scout's prior lint scope already excluded them.
       - examples/
+      # Keep test files out even if a caller passes --tests=true. They are
+      # exercised by go test, not the lint bar (see run.tests above).
+      - _test\.go$
 
 formatters:
   enable:
