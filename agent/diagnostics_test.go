@@ -31,7 +31,9 @@ func TestConsoleMessage_OmitEmptySource(t *testing.T) {
 		t.Fatalf("Marshal: %v", err)
 	}
 	m := make(map[string]any)
-	json.Unmarshal(data, &m)
+	if err := json.Unmarshal(data, &m); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
 	if _, ok := m["source"]; ok {
 		t.Error("source should be omitted when empty")
 	}

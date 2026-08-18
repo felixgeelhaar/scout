@@ -317,7 +317,9 @@ func TestWebVitalsResult_JSON(t *testing.T) {
 	}
 	// Verify JSON field names
 	m := make(map[string]any)
-	json.Unmarshal(data, &m)
+	if err := json.Unmarshal(data, &m); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
 	if _, ok := m["lcp_ms"]; !ok {
 		t.Error("expected JSON key 'lcp_ms'")
 	}
@@ -363,7 +365,9 @@ func TestAnnotatedResult_ImageOmitted(t *testing.T) {
 		t.Fatalf("Marshal: %v", err)
 	}
 	m := make(map[string]any)
-	json.Unmarshal(data, &m)
+	if err := json.Unmarshal(data, &m); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
 	if _, ok := m["image"]; ok {
 		t.Error("Image field should be omitted from JSON (json:\"-\")")
 	}
