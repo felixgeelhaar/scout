@@ -3,6 +3,7 @@ package browse
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"go.klarlabs.de/scout/internal/cdp"
 	"go.klarlabs.de/scout/internal/launcher"
@@ -90,12 +91,11 @@ func (e *Engine) ExistingPage() (*Page, error) {
 // NewPageAt creates a new browser page/tab and navigates directly to the URL.
 // Faster than NewPage + Navigate because Chrome loads the URL during target creation.
 //
-// Waits for the page load event before returning so callers can read URL/title
-// immediately. Returning before the navigation committed produced a flake in
-// integration_full_test.go:TestIntegrationEngineNewPageAndNewPageAt — under
-// load, URL() would still report "about:blank" because the target swap hadn't
-// finished. WaitLoad failures are non-fatal: we return the page anyway so the
-// caller can decide what to do (the previous behavior).
+// CreateTarget(url) starts navigation asynchronously. A bare WaitLoad can observe
+// about:blank's readyState=complete before the real navigation commits (flake in
+// TestIntegrationEngineNewPageAndNewPageAt / TestIntegrationPageClose). For real
+// URLs, poll until location leaves about:blank, then WaitLoad. WaitLoad failures
+// stay non-fatal so callers can decide what to do.
 func (e *Engine) NewPageAt(url string) (*Page, error) {
 	targetID, err := e.conn.CreateTarget(url)
 	if err != nil {
@@ -104,6 +104,18 @@ func (e *Engine) NewPageAt(url string) (*Page, error) {
 	page, err := newPage(e.conn, targetID, e.opts.timeout, URLValidator{AllowPrivateIPs: e.opts.allowPrivateIPs})
 	if err != nil {
 		return nil, err
+	}
+
+	// NewPage() calls NewPageAt("about:blank") — don't wait to leave blank.
+	if url != "" && url != "about:blank" {
+		deadline := time.Now().Add(page.timeout)
+		for time.Now().Before(deadline) {
+			href, urlErr := page.URL()
+			if urlErr == nil && href != "" && href != "about:blank" {
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
 	}
 	_ = page.WaitLoad()
 	return page, nil

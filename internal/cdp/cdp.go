@@ -88,7 +88,10 @@ func Dial(url string) (*Conn, error) {
 		ReadBufferSize:  1 << 20, // 1MB for large responses (screenshots)
 		WriteBufferSize: 32 * 1024,
 	}
-	ws, _, err := dialer.Dial(url, nil)
+	ws, resp, err := dialer.Dial(url, nil)
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
 	if err != nil {
 		return nil, fmt.Errorf("cdp: failed to connect to %s: %w", url, err)
 	}

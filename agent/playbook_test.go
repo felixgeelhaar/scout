@@ -99,6 +99,13 @@ func TestSavePlaybook_InvalidPath(t *testing.T) {
 	}
 }
 
+func TestSavePlaybook_RejectsSystemPath(t *testing.T) {
+	pb := &Playbook{Name: "test"}
+	if err := SavePlaybook(pb, "/etc/cron.d/scout.json"); err == nil {
+		t.Fatal("expected error writing under /etc")
+	}
+}
+
 func TestLoadPlaybook_NotFound(t *testing.T) {
 	_, err := LoadPlaybook("/nonexistent/playbook.json")
 	if err == nil {
@@ -109,7 +116,9 @@ func TestLoadPlaybook_NotFound(t *testing.T) {
 func TestLoadPlaybook_InvalidJSON(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.json")
-	os.WriteFile(path, []byte("not json"), 0o600)
+	if err := os.WriteFile(path, []byte("not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	_, err := LoadPlaybook(path)
 	if err == nil {

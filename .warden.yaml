@@ -8,3 +8,6 @@ steps:
   pre_commit: [lint]
   pre_push: [test, lint]
 parallel: true
+# Trust-pin provenance signatures to this agent/dev machine's warden key.
+trusted_keys:
+  - 595ebbd27f913fc8

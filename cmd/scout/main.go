@@ -37,10 +37,10 @@ func main() {
 	switch args[0] {
 	case "mcp":
 		if len(args) < 2 || args[1] != "serve" {
-			fmt.Fprintln(os.Stderr, "Usage: scout mcp serve")
+			fmt.Fprintln(os.Stderr, "Usage: scout mcp serve [--advanced]")
 			os.Exit(1)
 		}
-		serveMCP()
+		serveMCP(args[2:])
 
 	case "ui":
 		if len(args) < 2 || args[1] != "serve" {
@@ -225,7 +225,7 @@ Commands:
   watch <url> [--interval=5s]       Live-watch page changes (Ctrl+C to stop)
   pipe <command> [selector]         Process URLs from stdin (one per line)
   record <url> [--output=file]      Interactive recording → playbook JSON
-  mcp serve                         Start the MCP server (stdio transport)
+  mcp serve [--advanced]            Start the MCP server (stdio transport; --advanced exposes the full tool set)
   ui serve [flags]                  Start the AG-UI server (browser automation UI)
   version                           Print version information
 

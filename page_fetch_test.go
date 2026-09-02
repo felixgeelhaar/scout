@@ -48,7 +48,11 @@ func TestFetchInterceptorPatterns(t *testing.T) {
 	}
 	got := map[string]bool{}
 	for _, p := range pats {
-		got[p["resourceType"].(string)] = true
+		rt, ok := p["resourceType"].(string)
+		if !ok {
+			t.Fatalf("pattern missing resourceType: %+v", p)
+		}
+		got[rt] = true
 	}
 	if !got["Document"] || !got["Image"] {
 		t.Errorf("patterns missing a type: %+v", pats)
@@ -62,6 +66,47 @@ func TestFetchInterceptorPatterns(t *testing.T) {
 	all := fiAll.patternsLocked()
 	if len(all) != 1 || len(all[0]) != 0 {
 		t.Errorf("a catch-all rule should produce one empty pattern, got %+v", all)
+	}
+}
+
+func TestURLPolicyVerdict(t *testing.T) {
+	v := URLValidator{AllowPrivateIPs: false}
+	blocked := []InterceptedRequest{
+		{URL: "http://127.0.0.1/x", ResourceType: "XHR"},
+		{URL: "http://169.254.169.254/latest/meta-data", ResourceType: "Fetch"},
+		{URL: "http://10.0.0.1/api", ResourceType: "Image"},
+		{URL: "file:///etc/passwd", ResourceType: "Document"},
+		{URL: "javascript:alert(1)", ResourceType: "Document"},
+		{URL: "data:text/html,hi", ResourceType: "Document"},
+		{URL: "ws://127.0.0.1:1", ResourceType: "WebSocket"},
+	}
+	for _, r := range blocked {
+		got := urlPolicyVerdict(v, r)
+		if !got.Block {
+			t.Errorf("urlPolicyVerdict(%+v) allowed, want block", r)
+		}
+	}
+
+	allowed := []InterceptedRequest{
+		{URL: "https://example.com/a.js", ResourceType: "Script"},
+		{URL: "https://example.com/", ResourceType: "Document"},
+		{URL: "data:image/png;base64,xx", ResourceType: "Image"},
+		{URL: "blob:https://example.com/uuid", ResourceType: "Image"},
+		{URL: "about:blank", ResourceType: "Document"},
+		{URL: "chrome-extension://id/page.html", ResourceType: "Document"},
+		{URL: "chrome://settings/", ResourceType: "Document"},
+	}
+	for _, r := range allowed {
+		got := urlPolicyVerdict(v, r)
+		if got.Block {
+			t.Errorf("urlPolicyVerdict(%+v) blocked, want allow", r)
+		}
+	}
+
+	open := URLValidator{AllowPrivateIPs: true}
+	got := urlPolicyVerdict(open, InterceptedRequest{URL: "http://127.0.0.1/", ResourceType: "XHR"})
+	if got.Block {
+		t.Error("AllowPrivateIPs should permit loopback XHR")
 	}
 }
 

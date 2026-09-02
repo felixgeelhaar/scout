@@ -266,7 +266,7 @@ func TestEngineLaunchAlreadyLaunchedWithoutConn(t *testing.T) {
 	e := New()
 	err := e.Launch()
 	if err == nil {
-		defer e.Close()
+		defer func() { _ = e.Close() }()
 		return
 	}
 }

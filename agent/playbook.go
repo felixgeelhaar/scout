@@ -106,7 +106,11 @@ func SavePlaybook(pb *Playbook, path string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0o600)
+	cleaned, err := browse.SanitizeWritePath(path)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(cleaned, data, 0o600)
 }
 
 // LoadPlaybook loads a playbook from a JSON file.

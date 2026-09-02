@@ -59,8 +59,9 @@ The `internal/agui` package adds a third interface: an AG-UI protocol HTTP serve
 - Resilience middleware (Retry, Timeout, CircuitBreaker, Bulkhead) uses `c.SaveIndex()`/`c.RestoreIndex()` to replay the downstream handler chain. `RestoreIndex` clears `errors` and `aborted` but preserves `keys` — data set by prior handlers survives retries.
 - `agent.Session` holds a `sync.Mutex` and locks on every public method. Internal helpers (`ensurePage`, `observeInternal`, `pageResult`, `discoverFormInternal`) are called with the lock held — they must not re-lock.
 - The `internal/wait` package provides the polling implementation. `Page.WaitLoad()` and `Page.WaitForSelector()` delegate to `wait.ForLoad()` and `wait.ForSelector()`.
-- MCP eval tool is gated behind `SCOUT_ENABLE_EVAL=1` env var due to arbitrary code execution risk.
-- MCP server uses lazy session creation — browser starts on first tool use, not at startup. `configure` tool changes settings without restart.
+- MCP eval tool is gated behind `SCOUT_ENABLE_EVAL=1` (not registered, and ExecuteTool refuses it, unless that env is set). Same gate applies to AG-UI `eval`.
+- MCP default tool surface is the curated set in `curatedMCPTools` (~22). `scout mcp serve --advanced` or `SCOUT_MCP_ADVANCED=1` exposes the full set. `batch` is the multi-action tool (not `execute_batch`).
+- MCP server uses lazy session creation — browser starts on first tool use, not at startup. `configure` tool changes settings without restart. The session pointer is snapshotted under `sessionHolder` so `configure` cannot race a nil slot.
 - Playwright-style selectors (`:text('...')`, `:has-text('...')`) are translated to JS text-content lookup via `agent/selector.go`.
 - `annotated_screenshot` returns element list only by default (no base64 image). Set `include_image: true` for the image.
 - Action replay: `recordAction()` is called inside Navigate/Click/Type when `s.recording != nil`. Playbooks validate expected outcomes.
@@ -89,7 +90,7 @@ The `internal/agui` package adds a third interface: an AG-UI protocol HTTP serve
 - `server.go`: HTTP server with CORS, POST `/` handler, health check at `/health`.
 - `handler.go`: Agentic loop — LLM → tool calls → `ExecuteTool` → `STATE_DELTA` → repeat until text-only response. Max 10 tool loops per run.
 - `events.go`: Self-contained AG-UI SSE encoder (no SDK dependency). 16 event types incl. `RUN_BUDGET_EXHAUSTED` (10-hop ceiling hit) and `RUN_REPEATED_CALL` (3 identical (name, args) tool invocations in a row → loop terminates early — small-model failure mode guard).
-- `tools.go`: `CuratedTools()` (20 tools for large models) and `CoreTools()` (6 tools for small/local models like Ollama). `ExecuteTool` maps tool names to `agent.Session` methods. Tool results carrying scraped page text (`observe`, `observe_diff`, `extract`, `extract_table`, `markdown`, `discover_form`) are wrapped via `marshalUntrusted` — `{"_untrusted_page_content": true, "_warning": "...", "data": ...}` — and the system prompt tells the LLM to treat that `data` strictly as data. Defends against page-borne prompt injection.
+- `tools.go`: `CuratedTools()` (~50 tools for large models) and `CoreTools()` (6 tools for small/local models like Ollama). `eval` is appended only when `SCOUT_ENABLE_EVAL=1`. `ExecuteTool` maps tool names to `agent.Session` methods. Tool results carrying scraped page text (`observe`, `observe_diff`, `extract`, `extract_table`, `markdown`, `discover_form`, network, app/component state) are wrapped via `marshalUntrusted` — `{"_untrusted_page_content": true, "_warning": "...", "data": ...}` — and the system prompt tells the LLM to treat that `data` strictly as data. Defends against page-borne prompt injection. MCP observe/extract/network tools use the same `agent.WrapUntrusted` envelope.
 - `llm_claude.go` / `llm_openai.go`: Streaming LLM providers. OpenAI provider works with Ollama, Groq, Together, etc.
 - `sessions.go`: Thread→Session map with 10-minute idle cleanup. One browser per thread.
 - `state.go`: `BrowserState` struct + `Diff()` for JSON Patch (RFC 6902) delta generation.

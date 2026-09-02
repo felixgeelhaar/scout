@@ -15,7 +15,7 @@
   <a href="https://github.com/klarlabs-studio/scout/security/code-scanning"><img src="https://img.shields.io/badge/security-nox-22c55e?style=flat-square" alt="Security (nox)"></a>
 </p>
 
-A single statically-linked `scout` binary gives you a CLI, an 87-tool MCP server (so any MCP-aware agent — Claude Desktop, Cursor, Cline, custom — has a browser), a conversational chat UI, and a Go library with Gin-like middleware composition. Same engine, four access points.
+A single statically-linked `scout` binary gives you a CLI, an MCP server (curated tools by default, full set with `--advanced`), a conversational chat UI, and a Go library with Gin-like middleware composition. Same engine, four access points.
 
 ```bash
 brew install --cask klarlabs-studio/tap/scout-mcp
@@ -68,12 +68,15 @@ go install go.klarlabs.de/scout/cmd/scout@latest
 go get go.klarlabs.de/scout
 ```
 
-## MCP Server — 77 Tools
+## MCP Server — 22 curated tools (88 with `--advanced`)
 
-Run `scout mcp serve` and any MCP-aware agent has a browser. No second project to install, no Node runtime, no Python interpreter — the binary is the server. Configure in any MCP client:
+Run `scout mcp serve` and any MCP-aware agent has a browser. No second project to install, no Node runtime, no Python interpreter — the binary is the server. The default surface is a curated set of 22 tools so models do not drown in overlapping choices. Pass `--advanced` (or `SCOUT_MCP_ADVANCED=1`) for the full 88-tool catalog. `eval` is never included unless `SCOUT_ENABLE_EVAL=1`.
+
+Configure in any MCP client:
 
 ```bash
-claude mcp add scout -- scout mcp serve           # Claude Code
+claude mcp add scout -- scout mcp serve                 # curated (default)
+claude mcp add scout -- scout mcp serve --advanced      # full catalog
 ```
 
 ```json
@@ -82,28 +85,21 @@ claude mcp add scout -- scout mcp serve           # Claude Code
 
 ### Tool Categories
 
+Default (`scout mcp serve`) — curated:
+
 | Category | Tools |
 |----------|-------|
-| **Navigation** | `navigate`, `observe`, `observe_diff`, `observe_with_budget` |
-| **Interaction** | `click`, `click_label`, `click_text`, `type`, `hover`, `double_click`, `right_click`, `select_option`, `scroll_to`, `scroll_by`, `focus`, `drag_drop`, `dispatch_event` |
-| **Forms** | `fill_form`, `fill_form_semantic` (checkbox/radio + state echo), `discover_form` |
-| **Extraction** | `extract`, `extract_all`, `extract_table`, `auto_extract`, `scroll_and_collect`, `markdown`, `readable_text`, `accessibility_tree` |
-| **Capture** | `screenshot`, `annotated_screenshot`, `pdf` |
-| **Network** | `enable_network_capture`, `network_requests` |
-| **Tabs** | `open_tab`, `switch_tab`, `close_tab`, `list_tabs` |
-| **Frameworks** | `wait_spa`, `detect_frameworks`, `component_state`, `app_state` |
-| **Playback** | `start_recording`, `stop_recording`, `save_playbook`, `replay_playbook` |
-| **Video** | `start_screen_recording`, `stop_screen_recording` |
-| **Smart Helpers** | `check_readiness`, `suggest_selectors`, `session_history` |
-| **Vision** | `hybrid_observe`, `find_by_coordinates` |
-| **Batch** | `execute_batch` |
-| **Iframe** | `switch_to_frame`, `switch_to_main_frame` |
-| **Trace** | `start_trace`, `stop_trace` |
-| **Cookies** | `cookies_list`, `cookies_clear`, `cookies_set`, `dismiss_cookies` |
-| **Diagnostics** | `detect_dialog`, `detect_auth_wall`, `console_errors` (incl. network 4xx/5xx), `failed_requests`, `compare_tabs`, `upload_file` |
-| **Utility** | `has_element`, `wait_for`, `configure`, `set_viewport`, `web_vitals`, `select_by_prompt` |
+| **Session** | `configure`, `status`, `reset` |
+| **Navigation** | `navigate`, `observe`, `observe_diff` |
+| **Interaction** | `click`, `click_label`, `click_text`, `type`, `batch` |
+| **Forms** | `fill_form_semantic`, `submit_form`, `discover_form`, `dismiss_cookies` |
+| **Extraction** | `extract`, `extract_table`, `markdown` |
+| **Capture** | `screenshot`, `annotated_screenshot` |
+| **Utility** | `wait_for`, `has_element` |
 
-All tools have MCP annotations (`ReadOnly`, `OpenWorld`, `ClosedWorld`, `Idempotent`) for smart auto-approval. Read-only tools like `observe`, `extract`, and `screenshot` run without permission prompts.
+`--advanced` adds the rest of the catalog (hover/drag, tabs, network, playbooks, video, trace, frames, vision, diagnostics, `pdf`, `eval` only with `SCOUT_ENABLE_EVAL=1`, …). The multi-action tool is named **`batch`**, not `execute_batch`.
+
+All tools have MCP annotations (`ReadOnly`, `OpenWorld`, `ClosedWorld`, `Idempotent`) for smart auto-approval. Read-only tools like `observe`, `extract`, and `screenshot` run without permission prompts. Observe/extract/markdown/network results wrap page text in `_untrusted_page_content` so models treat it as data.
 
 ### Runtime Configuration
 
@@ -284,7 +280,7 @@ scout cookies <url>                   # list cookies (values redacted)
 scout watch <url> [--interval=5s]     # live-watch page changes
 scout pipe <command> [selector]       # batch process URLs from stdin
 scout record <url> [--output f]       # interactive recording → playbook
-scout mcp serve                       # start MCP server
+scout mcp serve [--advanced]          # start MCP server (curated tools; --advanced = full set)
 scout ui serve [flags]                # start chat UI
 scout version                         # print version
 ```
@@ -320,7 +316,7 @@ scout/
 │   └── vitals.go                      # WebVitals (LCP/CLS/INP)
 ├── internal/cdp/                      # WebSocket CDP client (context-aware)
 ├── internal/launcher/                 # Chrome process management
-├── cmd/scout/                         # CLI + MCP server (87 tools)
+├── cmd/scout/                         # CLI + MCP server (22 curated tools; 88 with --advanced)
 └── docs/                              # Landing page (GitHub Pages)
 ```
 

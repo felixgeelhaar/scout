@@ -51,7 +51,7 @@ func TestCuratedTools_AllUnique(t *testing.T) {
 // otherwise the chat tier advertises capabilities it cannot run. We detect the
 // "unknown tool" sentinel by name; a missing case fails this test.
 func TestCuratedTools_AllExecutable(t *testing.T) {
-	for _, set := range [][]ToolDef{CoreTools(), CuratedTools()} {
+	for _, set := range [][]ToolDef{CoreTools(), CuratedTools(), {evalTool()}} {
 		for _, tl := range set {
 			assertHasCase(t, tl.Name)
 		}
@@ -72,7 +72,7 @@ func assertHasCase(t *testing.T, name string) {
 
 // The default chat tier must be substantially closer to MCP than the
 // small-model core tier. Guard the key capability families the audit called
-// out: multi-tab, network, cookies, eval, frames, form submit, upload,
+// out: multi-tab, network, cookies, frames, form submit, upload,
 // framework detection, and waiting variants.
 func TestCuratedTools_CoversCapabilityFamilies(t *testing.T) {
 	have := map[string]bool{}
@@ -86,8 +86,6 @@ func TestCuratedTools_CoversCapabilityFamilies(t *testing.T) {
 		"enable_network_capture", "network_requests", "network_summary", "failed_requests",
 		// cookies
 		"cookies_list", "cookies_set", "cookies_clear",
-		// eval
-		"eval",
 		// frames
 		"switch_to_frame", "switch_to_main_frame",
 		// form submit + upload
@@ -103,6 +101,36 @@ func TestCuratedTools_CoversCapabilityFamilies(t *testing.T) {
 		if !have[name] {
 			t.Errorf("CuratedTools missing capability tool %q", name)
 		}
+	}
+}
+
+func TestToolsForLLM_EvalGated(t *testing.T) {
+	for _, tl := range ToolsForLLM(false, false) {
+		if tl.Name == "eval" {
+			t.Fatal("eval must not be advertised when disabled")
+		}
+	}
+	found := false
+	for _, tl := range ToolsForLLM(false, true) {
+		if tl.Name == "eval" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("eval must be advertised when enabled")
+	}
+	for _, tl := range ToolsForLLM(true, true) {
+		if tl.Name == "eval" {
+			t.Fatal("small-model core set must not include eval")
+		}
+	}
+}
+
+func TestExecuteTool_EvalDisabled(t *testing.T) {
+	t.Setenv("SCOUT_ENABLE_EVAL", "")
+	_, err := ExecuteTool(nil, "eval", json.RawMessage(`{"expression":"1"}`))
+	if err == nil || !strings.Contains(err.Error(), "disabled") {
+		t.Fatalf("expected disabled error, got %v", err)
 	}
 }
 

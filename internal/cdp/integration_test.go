@@ -25,7 +25,7 @@ func mockCDPServer(t *testing.T, handler func(conn *websocket.Conn, req map[stri
 			t.Logf("upgrade error: %v", err)
 			return
 		}
-		defer ws.Close()
+		defer func() { _ = ws.Close() }()
 		for {
 			_, msg, err := ws.ReadMessage()
 			if err != nil {
@@ -57,14 +57,14 @@ func TestCallSuccessfulResult(t *testing.T) {
 			"result": map[string]any{"frameId": "ABC123", "loaderId": "loader1"},
 		}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 	})
 
 	conn, err := Dial(wsURL(srv))
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	result, err := conn.Call("Page.navigate", map[string]string{"url": "https://example.com"})
 	if err != nil {
@@ -97,14 +97,14 @@ func TestCallErrorResponse(t *testing.T) {
 			},
 		}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 	})
 
 	conn, err := Dial(wsURL(srv))
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	_, err = conn.Call("Page.navigate", map[string]string{"url": "invalid"})
 	if err == nil {
@@ -133,7 +133,7 @@ func TestCallTimeout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
@@ -153,14 +153,14 @@ func TestCallNilParams(t *testing.T) {
 		// Verify no params field was sent (or it's null).
 		resp := map[string]any{"id": id, "result": map[string]any{}}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 	})
 
 	conn, err := Dial(wsURL(srv))
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	result, err := conn.Call("Runtime.enable", nil)
 	if err != nil {
@@ -183,14 +183,14 @@ func TestCallSessionCtxWithSessionID(t *testing.T) {
 			"result": map[string]any{"echoSession": sessionID},
 		}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 	})
 
 	conn, err := Dial(wsURL(srv))
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	ctx := context.Background()
 	result, err := conn.CallSessionCtx(ctx, "session-42", "DOM.getDocument", nil)
@@ -216,14 +216,14 @@ func TestCallSessionCtxCancellation(t *testing.T) {
 		id := req["id"]
 		resp := map[string]any{"id": id, "result": map[string]any{}}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 	})
 
 	conn, err := Dial(wsURL(srv))
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	// Cancel after a short delay.
@@ -250,7 +250,7 @@ func TestEventDispatchOverWebSocket(t *testing.T) {
 		// First send the response.
 		resp := map[string]any{"id": id, "result": map[string]any{}}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 
 		// Then send an event.
 		event := map[string]any{
@@ -258,14 +258,14 @@ func TestEventDispatchOverWebSocket(t *testing.T) {
 			"params": map[string]any{"timestamp": 12345.678},
 		}
 		data, _ = json.Marshal(event)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 	})
 
 	conn, err := Dial(wsURL(srv))
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	eventCh := make(chan json.RawMessage, 1)
 	conn.On("Page.loadEventFired", func(params json.RawMessage) {
@@ -300,7 +300,7 @@ func TestSessionScopedEventOverWebSocket(t *testing.T) {
 		id := req["id"]
 		resp := map[string]any{"id": id, "result": map[string]any{}}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 
 		// Send event for session "s1".
 		event := map[string]any{
@@ -309,19 +309,19 @@ func TestSessionScopedEventOverWebSocket(t *testing.T) {
 			"params":    map[string]any{},
 		}
 		data, _ = json.Marshal(event)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 
 		// Send event for session "s2".
 		event["sessionId"] = "s2"
 		data, _ = json.Marshal(event)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 	})
 
 	conn, err := Dial(wsURL(srv))
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	var s1Count, s2Count atomic.Int32
 	conn.OnSession("s1", "DOM.documentUpdated", func(_ json.RawMessage) {
@@ -339,10 +339,7 @@ func TestSessionScopedEventOverWebSocket(t *testing.T) {
 
 	// Wait for events to be dispatched.
 	deadline := time.After(2 * time.Second)
-	for {
-		if s1Count.Load() >= 1 && s2Count.Load() >= 1 {
-			break
-		}
+	for s1Count.Load() < 1 || s2Count.Load() < 1 {
 		select {
 		case <-deadline:
 			t.Fatalf("timed out: s1=%d s2=%d", s1Count.Load(), s2Count.Load())
@@ -365,7 +362,7 @@ func TestUnsubscribeOverWebSocket(t *testing.T) {
 		id := req["id"]
 		resp := map[string]any{"id": id, "result": map[string]any{}}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 
 		// Send an event each time.
 		event := map[string]any{
@@ -373,14 +370,14 @@ func TestUnsubscribeOverWebSocket(t *testing.T) {
 			"params": map[string]any{"requestId": callCount.Add(1)},
 		}
 		data, _ = json.Marshal(event)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 	})
 
 	conn, err := Dial(wsURL(srv))
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	var handlerCalls atomic.Int32
 	unsub := conn.On("Network.requestWillBeSent", func(_ json.RawMessage) {
@@ -410,7 +407,7 @@ func TestRemoveSessionHandlersOverWebSocket(t *testing.T) {
 		id := req["id"]
 		resp := map[string]any{"id": id, "result": map[string]any{}}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 
 		// Send session-scoped event.
 		event := map[string]any{
@@ -419,14 +416,14 @@ func TestRemoveSessionHandlersOverWebSocket(t *testing.T) {
 			"params":    map[string]any{},
 		}
 		data, _ = json.Marshal(event)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 	})
 
 	conn, err := Dial(wsURL(srv))
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	var calls atomic.Int32
 	conn.OnSession("target-sess", "Page.frameNavigated", func(_ json.RawMessage) {
@@ -500,7 +497,7 @@ func TestCloseInterruptsWaitingCall(t *testing.T) {
 
 	// Give the call time to register, then close.
 	time.Sleep(50 * time.Millisecond)
-	conn.Close()
+	_ = conn.Close()
 
 	select {
 	case err := <-errCh:
@@ -524,7 +521,7 @@ func TestReadLoopClosesOnServerDisconnect(t *testing.T) {
 			return
 		}
 		// Close immediately to simulate server disconnect.
-		ws.Close()
+		_ = ws.Close()
 	}))
 	defer srv.Close()
 
@@ -532,7 +529,7 @@ func TestReadLoopClosesOnServerDisconnect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// The readLoop should detect the disconnect and close the connection.
 	// Any call should fail.
@@ -555,14 +552,14 @@ func TestConcurrentCalls(t *testing.T) {
 			"result": map[string]any{"method": method},
 		}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 	})
 
 	conn, err := Dial(wsURL(srv))
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	const numCalls = 50
 	var wg sync.WaitGroup
@@ -609,7 +606,7 @@ func TestCreateTarget(t *testing.T) {
 				"result": map[string]any{"targetId": "target-123"},
 			}
 			data, _ := json.Marshal(resp)
-			ws.WriteMessage(websocket.TextMessage, data)
+			_ = ws.WriteMessage(websocket.TextMessage, data)
 		}
 	})
 
@@ -617,7 +614,7 @@ func TestCreateTarget(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	targetID, err := conn.CreateTarget("about:blank")
 	if err != nil {
@@ -638,7 +635,7 @@ func TestAttachToTarget(t *testing.T) {
 				"result": map[string]any{"sessionId": "session-abc"},
 			}
 			data, _ := json.Marshal(resp)
-			ws.WriteMessage(websocket.TextMessage, data)
+			_ = ws.WriteMessage(websocket.TextMessage, data)
 		}
 	})
 
@@ -646,7 +643,7 @@ func TestAttachToTarget(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	sessionID, err := conn.AttachToTarget("target-123")
 	if err != nil {
@@ -667,7 +664,7 @@ func TestCloseTarget(t *testing.T) {
 				"result": map[string]any{"success": true},
 			}
 			data, _ := json.Marshal(resp)
-			ws.WriteMessage(websocket.TextMessage, data)
+			_ = ws.WriteMessage(websocket.TextMessage, data)
 		}
 	})
 
@@ -675,7 +672,7 @@ func TestCloseTarget(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	err = conn.CloseTarget("target-123")
 	if err != nil {
@@ -694,14 +691,14 @@ func TestCreateTargetError(t *testing.T) {
 			},
 		}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 	})
 
 	conn, err := Dial(wsURL(srv))
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	_, err = conn.CreateTarget("about:blank")
 	if err == nil {
@@ -719,24 +716,26 @@ func TestReadLoopInvalidJSON(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer ws.Close()
+		defer func() { _ = ws.Close() }()
 		for {
 			_, msg, err := ws.ReadMessage()
 			if err != nil {
 				return
 			}
 			// Send invalid JSON first -- readLoop should skip it.
-			ws.WriteMessage(websocket.TextMessage, []byte("{not valid json"))
+			_ = ws.WriteMessage(websocket.TextMessage, []byte("{not valid json"))
 
 			// Then send a valid response.
 			var req map[string]any
-			json.Unmarshal(msg, &req)
+			if err := json.Unmarshal(msg, &req); err != nil {
+				continue
+			}
 			resp := map[string]any{
 				"id":     req["id"],
 				"result": map[string]any{"ok": true},
 			}
 			data, _ := json.Marshal(resp)
-			ws.WriteMessage(websocket.TextMessage, data)
+			_ = ws.WriteMessage(websocket.TextMessage, data)
 		}
 	}))
 	defer srv.Close()
@@ -745,7 +744,7 @@ func TestReadLoopInvalidJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// The call should succeed despite the invalid JSON in between.
 	result, err := conn.Call("Test.method", nil)
@@ -773,8 +772,8 @@ func TestReadLoopClosesPendingOnDisconnect(t *testing.T) {
 			return
 		}
 		// Read one message then close without responding.
-		ws.ReadMessage()
-		ws.Close()
+		_, _, _ = ws.ReadMessage()
+		_ = ws.Close()
 	}))
 	defer srv.Close()
 
@@ -782,7 +781,7 @@ func TestReadLoopClosesPendingOnDisconnect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -808,14 +807,14 @@ func TestCallSession(t *testing.T) {
 			"result": map[string]any{"session": sessionID},
 		}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 	})
 
 	conn, err := Dial(wsURL(srv))
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	result, err := conn.CallSession("my-session", "DOM.enable", nil)
 	if err != nil {
@@ -841,7 +840,7 @@ func TestMultipleEventsDispatched(t *testing.T) {
 		// Respond first.
 		resp := map[string]any{"id": id, "result": map[string]any{}}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 
 		// Send 3 events.
 		for i := 0; i < 3; i++ {
@@ -850,7 +849,7 @@ func TestMultipleEventsDispatched(t *testing.T) {
 				"params": map[string]any{"index": i},
 			}
 			data, _ = json.Marshal(event)
-			ws.WriteMessage(websocket.TextMessage, data)
+			_ = ws.WriteMessage(websocket.TextMessage, data)
 		}
 	})
 
@@ -858,7 +857,7 @@ func TestMultipleEventsDispatched(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	var count atomic.Int32
 	conn.On("Console.messageAdded", func(_ json.RawMessage) {
@@ -884,21 +883,25 @@ func TestMultipleEventsDispatched(t *testing.T) {
 func TestIDMonotonicallyIncreases(t *testing.T) {
 	var lastID atomic.Int64
 	srv := mockCDPServer(t, func(ws *websocket.Conn, req map[string]any) {
-		id := int64(req["id"].(float64))
+		idFloat, ok := req["id"].(float64)
+		if !ok {
+			return
+		}
+		id := int64(idFloat)
 		prev := lastID.Swap(id)
 		if prev >= id {
 			t.Errorf("non-monotonic ID: prev=%d, got=%d", prev, id)
 		}
 		resp := map[string]any{"id": id, "result": map[string]any{}}
 		data, _ := json.Marshal(resp)
-		ws.WriteMessage(websocket.TextMessage, data)
+		_ = ws.WriteMessage(websocket.TextMessage, data)
 	})
 
 	conn, err := Dial(wsURL(srv))
 	if err != nil {
 		t.Fatalf("Dial error: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	for i := 0; i < 10; i++ {
 		_, err := conn.Call("Test.ping", nil)

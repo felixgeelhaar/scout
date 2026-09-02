@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"go.klarlabs.de/scout/agent"
 )
 
 // ServerConfig configures the AG-UI HTTP server.
@@ -40,10 +42,7 @@ func Serve(ctx context.Context, cfg ServerConfig) error {
 	if cfg.Provider == "ollama" {
 		cfg.SmallModel = true
 	}
-	tools := CuratedTools()
-	if cfg.SmallModel {
-		tools = CoreTools()
-	}
+	tools := ToolsForLLM(cfg.SmallModel, agent.EvalEnabled())
 	log.Printf("agui: using %s provider (model: %s, tools: %d)", cfg.Provider, providerModel(cfg), len(tools))
 
 	handler := &Handler{
