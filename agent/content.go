@@ -36,6 +36,8 @@ func DefaultContentOptions() ContentOptions {
 
 // SetContentOptions configures content limits for the session.
 func (s *Session) SetContentOptions(opts ContentOptions) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.contentOpts = opts
 }
 

@@ -1,0 +1,13 @@
+# Mirror of scripts/pre-commit.sh for the Python pre-commit framework.
+# Install: pip install pre-commit && pre-commit install
+# Run:     pre-commit run --all-files
+# Prefer `make hooks` / `bash scripts/pre-commit.sh` if you don't use this framework.
+repos:
+  - repo: local
+    hooks:
+      - id: scout-pre-commit
+        name: scout pre-commit checks
+        entry: bash scripts/pre-commit.sh
+        language: system
+        pass_filenames: false
+        always_run: true

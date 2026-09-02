@@ -503,7 +503,7 @@ func TestBasicAuthEncodingCorrectness(t *testing.T) {
 // Handler invocation tests (nil-page context exercises guard branches)
 // ===========================================================================
 
-func runWithNilPage(t *testing.T, name string, handler browse.HandlerFunc) *browse.Context {
+func runWithNilPage(t *testing.T, name string, handler browse.HandlerFunc) {
 	t.Helper()
 	executed := false
 	chain := browse.HandlersChain{
@@ -517,7 +517,6 @@ func runWithNilPage(t *testing.T, name string, handler browse.HandlerFunc) *brow
 	if !executed {
 		t.Errorf("downstream handler was not called for %s with nil page", name)
 	}
-	return ctx
 }
 
 func TestStealthHandlerNilPage(t *testing.T) {

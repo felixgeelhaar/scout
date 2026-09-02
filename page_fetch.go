@@ -2,6 +2,7 @@ package browse
 
 import (
 	"net/url"
+	"strings"
 	"sync"
 )
 
@@ -190,22 +191,57 @@ func (fi *fetchInterceptor) handle(params map[string]any) {
 	_, _ = fi.page.call("Fetch.continueRequest", cont)
 }
 
-// installURLPolicy adds the redirect/navigation guard: every Document request
-// (initial navigation and each redirect) is re-validated against the page's URL
-// policy, so a public URL that redirects to an internal host is blocked before
-// Chrome ever fetches it. Only meaningful when the validator blocks private IPs.
+func urlPolicyVerdict(v URLValidator, r InterceptedRequest) RequestVerdict {
+	raw := r.URL
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme == "" {
+		if r.ResourceType == "Document" {
+			return RequestVerdict{Block: true, BlockReason: "AccessDenied"}
+		}
+		return RequestVerdict{}
+	}
+	scheme := strings.ToLower(u.Scheme)
+	switch scheme {
+	case "http", "https":
+		if err := v.Validate(raw); err != nil {
+			return RequestVerdict{Block: true, BlockReason: "AccessDenied"}
+		}
+		return RequestVerdict{}
+	case "ws", "wss":
+		httpURL := *u
+		if scheme == "wss" {
+			httpURL.Scheme = "https"
+		} else {
+			httpURL.Scheme = "http"
+		}
+		if err := v.Validate(httpURL.String()); err != nil {
+			return RequestVerdict{Block: true, BlockReason: "AccessDenied"}
+		}
+		return RequestVerdict{}
+	case "data", "blob", "about":
+		if r.ResourceType == "Document" && scheme == "data" {
+			return RequestVerdict{Block: true, BlockReason: "AccessDenied"}
+		}
+		return RequestVerdict{}
+	case "chrome", "chrome-extension", "devtools":
+		// Browser-internal schemes are not attacker-controlled fetches.
+		return RequestVerdict{}
+	default:
+		return RequestVerdict{Block: true, BlockReason: "AccessDenied"}
+	}
+}
+
+// installURLPolicy adds the redirect/navigation/subresource guard: every
+// intercepted request is re-validated against the page's URL policy, so a
+// public page cannot fetch internal hosts (and a public URL that redirects to
+// an internal host is blocked before Chrome ever fetches it).
 func (p *Page) installURLPolicy() error {
 	_, err := p.InterceptRequests(RequestRule{
-		Name:          "url-policy",
-		ResourceTypes: []string{"Document"},
+		Name: "url-policy",
+		// Empty ResourceTypes intercepts every type — Document plus XHR/Fetch/
+		// image/script subresources — so page JS cannot SSRF via fetch().
 		Decide: func(r InterceptedRequest) RequestVerdict {
-			if r.ResourceType != "Document" {
-				return RequestVerdict{}
-			}
-			if err := p.urlValidator.Validate(r.URL); err != nil {
-				return RequestVerdict{Block: true, BlockReason: "AccessDenied"}
-			}
-			return RequestVerdict{}
+			return urlPolicyVerdict(p.urlValidator, r)
 		},
 	})
 	return err

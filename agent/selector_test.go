@@ -26,10 +26,8 @@ func TestTextSelectorRegex(t *testing.T) {
 				if matches[1] != tt.want {
 					t.Errorf("got %q, want %q", matches[1], tt.want)
 				}
-			} else {
-				if len(matches) > 1 {
-					t.Errorf("expected no match for %q, got %q", tt.input, matches[1])
-				}
+			} else if len(matches) > 1 {
+				t.Errorf("expected no match for %q, got %q", tt.input, matches[1])
 			}
 		})
 	}
@@ -58,10 +56,8 @@ func TestHasTextSelectorRegex(t *testing.T) {
 				if matches[1] != tt.want {
 					t.Errorf("got %q, want %q", matches[1], tt.want)
 				}
-			} else {
-				if len(matches) > 1 {
-					t.Errorf("expected no match for %q, got %q", tt.input, matches[1])
-				}
+			} else if len(matches) > 1 {
+				t.Errorf("expected no match for %q, got %q", tt.input, matches[1])
 			}
 		})
 	}

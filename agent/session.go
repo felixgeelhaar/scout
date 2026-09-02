@@ -982,6 +982,17 @@ func (s *Session) Screenshot() ([]byte, error) {
 	})
 }
 
+// ScreenshotWithOptions captures the page while holding the session lock for
+// the whole capture, so a concurrent Navigate cannot close the page mid-shot.
+func (s *Session) ScreenshotWithOptions(opts browse.ScreenshotOptions) ([]byte, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.ensurePage(); err != nil {
+		return nil, err
+	}
+	return s.page.ScreenshotWithOptions(opts)
+}
+
 // PDF generates a PDF of the page.
 func (s *Session) PDF() ([]byte, error) {
 	s.mu.Lock()

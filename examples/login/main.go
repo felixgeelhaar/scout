@@ -34,7 +34,6 @@ func main() {
 		browse.WithViewport(1280, 720),
 	)
 	engine.MustLaunch()
-	defer engine.Close()
 
 	engine.Task("login", middleware.ScreenshotOnError("./"), func(c *browse.Context) {
 		c.MustNavigate(*url)
@@ -43,7 +42,7 @@ func main() {
 		c.El(*passSel).MustInput(*pass)
 		c.El(*submitSel).MustClick()
 
-		c.WaitStable()
+		_ = c.WaitStable()
 
 		fmt.Printf("Logged in. Current URL: %s\n", c.URL())
 
@@ -53,7 +52,9 @@ func main() {
 	})
 
 	if err := engine.Run("login"); err != nil {
+		_ = engine.Close()
 		fmt.Fprintf(os.Stderr, "Login failed: %v\n", err)
 		os.Exit(1)
 	}
+	_ = engine.Close()
 }

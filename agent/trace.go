@@ -47,6 +47,12 @@ func (s *Session) StopTrace(path string) (*TraceResult, error) {
 }
 
 func (s *Session) writeTraceZip(path string, trace *traceState) (*TraceResult, error) {
+	cleaned, err := browse.SanitizeWritePath(path)
+	if err != nil {
+		return nil, err
+	}
+	path = cleaned
+
 	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return nil, fmt.Errorf("failed to create output directory: %w", err)
 	}

@@ -21,7 +21,6 @@ func main() {
 
 	engine := browse.Default(browse.WithHeadless(*headless))
 	engine.MustLaunch()
-	defer engine.Close()
 
 	engine.Task("scrape", func(c *browse.Context) {
 		c.MustNavigate(*url)
@@ -29,7 +28,7 @@ func main() {
 		items := c.ElAll(*selector)
 		fmt.Printf("Found %d items:\n\n", items.Count())
 
-		items.Each(func(i int, el *browse.Selection) {
+		_ = items.Each(func(i int, el *browse.Selection) {
 			title, _ := el.Text()
 			href, _ := el.Attr("href")
 			fmt.Printf("%3d. %s\n     %s\n\n", i+1, title, href)
@@ -37,7 +36,9 @@ func main() {
 	})
 
 	if err := engine.Run("scrape"); err != nil {
+		_ = engine.Close()
 		fmt.Fprintf(os.Stderr, "Scrape failed: %v\n", err)
 		os.Exit(1)
 	}
+	_ = engine.Close()
 }

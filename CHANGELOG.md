@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Gate `eval` behind `SCOUT_ENABLE_EVAL=1` for MCP (tool is not registered otherwise) and the chat UI; ExecuteTool also refuses it when the flag is unset.
+- Agent-supplied write paths (`screenshot` `output_path`, playbooks, traces, recordings, profiles) reject path traversal, credential locations, and system directories, and write with mode `0600`.
+- URL policy intercepts every resource type, not just Document navigations, so page JS cannot `fetch()` metadata/private IPs. `data:`/`blob:` subresources, `about:blank`, and browser-internal schemes (`chrome:`, `chrome-extension:`, `devtools:`) remain allowed.
+- Observe/extract/markdown/network (and related) MCP results use the same `_untrusted_page_content` envelope as AG-UI.
+
+### Changed
+
+- MCP default tool surface is 22 curated tools. `scout mcp serve --advanced` (or `SCOUT_MCP_ADVANCED=1`) exposes the full catalog. The multi-action tool is `batch`.
+- MCP `screenshot` captures under the session lock via `Session.ScreenshotWithOptions`. The process-wide session pointer is snapshotted under a mutex so `configure` cannot race a nil slot.
+
 ## [1.14.0] - 2026-07-05
 
 Security & correctness hardening from a full multi-agent code review (#51–#58),

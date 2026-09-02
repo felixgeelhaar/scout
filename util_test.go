@@ -63,8 +63,14 @@ func TestWriteFile(t *testing.T) {
 		if err == nil {
 			t.Error("expected error for path traversal")
 		}
-		if err != nil && !strings.Contains(err.Error(), "path traversal") {
-			t.Errorf("error should mention path traversal, got: %v", err)
+		if err != nil && !strings.Contains(err.Error(), "path traversal") && !strings.Contains(err.Error(), "refusing") {
+			t.Errorf("error should mention path traversal or refusing, got: %v", err)
+		}
+	})
+
+	t.Run("blocks system path", func(t *testing.T) {
+		if err := writeFile("/etc/cron.d/scout", []byte("bad")); err == nil {
+			t.Fatal("expected error for /etc write")
 		}
 	})
 
@@ -85,6 +91,36 @@ func TestWriteFile(t *testing.T) {
 			t.Errorf("file size = %d, want 0", info.Size())
 		}
 	})
+}
+
+func TestSanitizeCapturePath(t *testing.T) {
+	got, err := SanitizeCapturePath("", "screenshot", "png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(got, os.TempDir()) {
+		t.Errorf("empty path should resolve under temp, got %q", got)
+	}
+
+	rel, err := SanitizeCapturePath("scout-rel/shot.png", "screenshot", "png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(rel, os.TempDir()) {
+		t.Errorf("relative path should resolve under temp, got %q", rel)
+	}
+
+	if _, err := SanitizeCapturePath("../../../etc/cron.d/x", "screenshot", "png"); err == nil {
+		t.Fatal("relative traversal must be rejected")
+	}
+
+	abs, err := SanitizeCapturePath(filepath.Join(t.TempDir(), "shot.png"), "screenshot", "png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !filepath.IsAbs(abs) {
+		t.Errorf("absolute path should stay absolute, got %q", abs)
+	}
 }
 
 func TestJsonQuote(t *testing.T) {

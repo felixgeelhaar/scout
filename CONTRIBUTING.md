@@ -43,7 +43,9 @@ Requires Go 1.23+ and Chrome/Chromium installed.
 1. Add handler in `cmd/scout/mcp.go`
 2. Define input struct with `jsonschema` tags
 3. Use `agent.Session` methods — don't access browse internals directly
-4. Update tool count in README
+4. If it belongs on the default surface, add the name to `curatedMCPTools` in `cmd/scout/mcp_catalog.go`
+5. Wrap observe/extract/network-like results with `agent.WrapUntrusted`
+6. Update tool counts in README (curated vs `--advanced`)
 
 ## Commit Messages
 

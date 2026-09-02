@@ -44,7 +44,7 @@ func TestEventHandlerCanCallCDPWithoutDeadlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	done := make(chan error, 1)
 	conn.On("Test.event", func(_ json.RawMessage) {
@@ -73,7 +73,7 @@ func TestUnsubscribeRemovesHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	var count atomic.Int32
 	unsub := conn.On("Test.event", func(_ json.RawMessage) { count.Add(1) })
@@ -102,7 +102,7 @@ func TestHandlerPanicDoesNotKillDispatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	var good atomic.Int32
 	conn.On("Test.event", func(_ json.RawMessage) { panic("boom") })

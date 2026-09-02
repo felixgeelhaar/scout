@@ -92,7 +92,11 @@ func (s *Session) SaveProfile(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal profile: %w", err)
 	}
-	return os.WriteFile(path, data, 0o600)
+	cleaned, err := browse.SanitizeWritePath(path)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(cleaned, data, 0o600)
 }
 
 // LoadProfile reads a JSON profile file and applies it to the session.

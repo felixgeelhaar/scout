@@ -827,13 +827,20 @@ func TestIntegrationPageClose(t *testing.T) {
 		t.Fatalf("NewPageAt: %v", err)
 	}
 
-	// Verify page is functional
+	// Verify page is functional (NewPageAt must have left about:blank).
+	href, err := page.URL()
+	if err != nil {
+		t.Fatalf("URL: %v", err)
+	}
+	if href == "" || href == "about:blank" {
+		t.Fatalf("NewPageAt still on about:blank: %q", href)
+	}
 	title, err := page.Evaluate(`document.title`)
 	if err != nil {
 		t.Fatalf("Evaluate: %v", err)
 	}
 	if title != "Full Test Page" {
-		t.Errorf("title: expected 'Full Test Page', got %v", title)
+		t.Errorf("title: expected 'Full Test Page', got %v (url=%q)", title, href)
 	}
 
 	// Close the page
