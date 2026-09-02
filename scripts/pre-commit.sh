@@ -54,14 +54,15 @@ pass "unit tests"
 # 5. coverctl (if available)
 echo -n "Running coverctl check... "
 if command -v coverctl &>/dev/null; then
-    if [ -f coverage.out ]; then
-        if ! coverctl check --from-profile --profile coverage.out --config .coverctl.yaml > /dev/null 2>&1; then
-            fail "coverctl: coverage below thresholds. Run 'make cover' first"
+    if [ ! -f coverage.out ]; then
+        if ! go test -timeout 180s -coverprofile=coverage.out ./... > /dev/null 2>&1; then
+            fail "coverctl: failed to generate coverage.out"
         fi
-        pass "coverctl (from existing profile)"
-    else
-        warn "coverctl: no coverage.out found, run 'make cover' to generate"
     fi
+    if ! coverctl check --from-profile --profile coverage.out --config .coverctl.yaml > /dev/null 2>&1; then
+        fail "coverctl: coverage below thresholds. Run 'make cover' first"
+    fi
+    pass "coverctl"
 else
     warn "coverctl not installed, skipping"
 fi
